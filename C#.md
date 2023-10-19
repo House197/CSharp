@@ -420,3 +420,36 @@ public static int WordCount(this string str)
 "Hello World".WordCount();
 // => 2
 ```
+
+# Classes <a id="Classes"></a>
+- El principal constructor orientado a objetos en C# es class.
+    - Class es una combinación de datos (fields) y comportamiento (methods).
+    - Los métodos y campos de una clase se les conoce como miembros.
+- El acceso a los miembros puede estar restringido a través de modificadores de acceso, siendo los más comunes:
+    - Public: el miembro puede accederse por cualquier código (sin restricciones).
+    - Private: el miembro solo puede ser accedido por código en la misma clase.
+- Para crear una instancia de una clase (también conocido como un objeto), se usa la palabra reservada new:
+``` C#
+class Car {
+
+}
+
+// Creación de instancias
+var myCar = new Car();
+var yourCar = new Car();
+```
+
+- Los campos poseen de un tipo y pueden definirse en cualquier lado de la clase.
+    - Los campos públicos se definen con PascalCase.
+    - Los campos privados se deifnen usando camelClase y se les inicia con .
+
+``` C#
+class Car {
+    public int Weight;
+
+    private string _color;
+}
+```
+
+- Se pueden colocar valores por defectos a los campos.
+- Se usa la notación de punto para acceder y actualizar los valores de un campo.
