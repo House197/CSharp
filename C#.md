@@ -21,6 +21,7 @@
 7. [If Statement](#If)
 8. [Expression-bodies Methods](#ExpressionBodies)
 9. [Extensions Methods](#ExtensionsMethods)
+9. [Classes](#Classes)
 
 # Notas <a id="Notas"></a>
 - Siempre terminar líneas con punto y coma ;.
@@ -84,7 +85,7 @@ class SomeClass {
 }
 ```
 
-```
+``` C#
 SomeClass instance = new SomeClass();
 instance.InstanceMethod();   //Fine
 instance.StaticMethod();     //Won't compile
@@ -120,8 +121,8 @@ static class QuestLogic
 }
 ```
 
-- Los métodos se invocan usando la sintaxis de punto en una instancia, especificando el nomre del método y pasando los argumentos que se requieren.
-    - Se puede especificar el nombre del parámetros correspondiente, lo cual es opcional.
+- Los métodos se invocan usando la sintaxis de punto en una instancia, especificando el nombre del método y pasando los argumentos que se requieren.
+    - Se puede especificar el nombre del parámetro correspondiente, lo cual es opcional.
 
 ``` C#
 var calculator = new Calculator();
@@ -164,7 +165,7 @@ string name = "Jane";
 ```
 
 - Se prefiere la **interpolación** en lugar de concatenación simple para el formateo de strings más complejos.
-    - Se usar la interpolación en un string se debe usar el símbolo de dolar **$** y llaves para acceder a cualquier variable dentro del string.
+    - Para la interpolación en un string se debe usar el símbolo de dolar **$** y llaves para acceder a cualquier variable dentro del string.
 
 ``` C#
 string name = "Jane";
@@ -421,13 +422,14 @@ public static int WordCount(this string str)
 // => 2
 ```
 
-# Classes <a id="Classes"></a>
+# <a href='https://exercism.org/tracks/csharp/concepts/classes'>Classes </a> <a id="Classes"></a>
 - El principal constructor orientado a objetos en C# es class.
     - Class es una combinación de datos (fields) y comportamiento (methods).
     - Los métodos y campos de una clase se les conoce como miembros.
 - El acceso a los miembros puede estar restringido a través de modificadores de acceso, siendo los más comunes:
     - Public: el miembro puede accederse por cualquier código (sin restricciones).
     - Private: el miembro solo puede ser accedido por código en la misma clase.
+- Si no se especifica un modificador de acceso para los miembros de una clase se les asigna por defecto private.
 - Para crear una instancia de una clase (también conocido como un objeto), se usa la palabra reservada new:
 ``` C#
 class Car {
@@ -441,15 +443,52 @@ var yourCar = new Car();
 
 - Los campos poseen de un tipo y pueden definirse en cualquier lado de la clase.
     - Los campos públicos se definen con PascalCase.
-    - Los campos privados se deifnen usando camelClase y se les inicia con .
+    - Los campos privados se definen usando camelClase y se les inicia con _
 
 ``` C#
 class Car {
+    // Accessible by anyone
     public int Weight;
 
-    private string _color;
+    // Only accessible by code in this class
 }
 ```
 
 - Se pueden colocar valores por defectos a los campos.
+    - Si a un campo no se le especifica un valor inicial, se le establecerá su <a href='https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/default-values'>valor de tipo por defecto</a>.
+    - El valor del campo para una instancia puede ser accedido y modificado desde
 - Se usa la notación de punto para acceder y actualizar los valores de un campo.
+
+``` C#
+class Car
+{
+    // Will be set to specified value
+    public int Weight = 2500;
+
+    // Will be set to default value (0)
+    public int Year;
+}
+
+var newCar = new Car();
+newCar.Weight; // => 2500
+newCar.Year;   // => 0
+
+// Update value of the field
+newCar.Year = 2018;
+```
+
+- Los campos privados se actualizan usualmente por medio de side-effects de la invocación de un método.
+    - Tales métodos no retornan algún valor, por lo que el tipo de dato que retornan es void.
+
+``` C#
+class CarImporter
+{
+    private int _carsImported;
+
+    public void ImportCars(int numberOfCars)
+    {
+        // Update private field
+        _carsImported = _carsImported + numberOfCars;
+    }
+}
+```
