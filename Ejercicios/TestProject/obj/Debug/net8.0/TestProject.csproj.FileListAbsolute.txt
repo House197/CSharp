@@ -1,0 +1,15 @@
+C:\Users\ECON\Documents\GitHub\CSharp\Ejercicios\TestProject\bin\Debug\net8.0\TestProject.exe
+C:\Users\ECON\Documents\GitHub\CSharp\Ejercicios\TestProject\bin\Debug\net8.0\TestProject.deps.json
+C:\Users\ECON\Documents\GitHub\CSharp\Ejercicios\TestProject\bin\Debug\net8.0\TestProject.runtimeconfig.json
+C:\Users\ECON\Documents\GitHub\CSharp\Ejercicios\TestProject\bin\Debug\net8.0\TestProject.dll
+C:\Users\ECON\Documents\GitHub\CSharp\Ejercicios\TestProject\bin\Debug\net8.0\TestProject.pdb
+C:\Users\ECON\Documents\GitHub\CSharp\Ejercicios\TestProject\obj\Debug\net8.0\TestProject.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ECON\Documents\GitHub\CSharp\Ejercicios\TestProject\obj\Debug\net8.0\TestProject.AssemblyInfoInputs.cache
+C:\Users\ECON\Documents\GitHub\CSharp\Ejercicios\TestProject\obj\Debug\net8.0\TestProject.AssemblyInfo.cs
+C:\Users\ECON\Documents\GitHub\CSharp\Ejercicios\TestProject\obj\Debug\net8.0\TestProject.csproj.CoreCompileInputs.cache
+C:\Users\ECON\Documents\GitHub\CSharp\Ejercicios\TestProject\obj\Debug\net8.0\TestProject.sourcelink.json
+C:\Users\ECON\Documents\GitHub\CSharp\Ejercicios\TestProject\obj\Debug\net8.0\TestProject.dll
+C:\Users\ECON\Documents\GitHub\CSharp\Ejercicios\TestProject\obj\Debug\net8.0\refint\TestProject.dll
+C:\Users\ECON\Documents\GitHub\CSharp\Ejercicios\TestProject\obj\Debug\net8.0\TestProject.pdb
+C:\Users\ECON\Documents\GitHub\CSharp\Ejercicios\TestProject\obj\Debug\net8.0\TestProject.genruntimeconfig.cache
+C:\Users\ECON\Documents\GitHub\CSharp\Ejercicios\TestProject\obj\Debug\net8.0\ref\TestProject.dll
