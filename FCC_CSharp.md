@@ -197,6 +197,7 @@ Hello   World!
 ```
 
 ### Verbatim string literal
+- The @ symbol means to read that string literally, and don't interpret control characters otherwise.
 - Un verbatim string literal mantiene todos los espacios en blanco y los caracteres sin la necesidad de escapar el backlash.
 - Se crea un verbatim string con la directiva **@** antes del literal string.
 - Permite usar el unescaped \ character.
@@ -380,7 +381,7 @@ value ++;          // value is now 11.
 - Según la posición estos operadores ejecútan la operación antes o después de recuperar su valor.
     - Por ejemplo:
         - ++value el incremento ocurre antes de que el valor sea recuperado.
-        - value++ incrementa el valor antes de que sea recuperado.
+        - value++ incrementa el valor DESPUÉS de que sea recuperado.
 
 ``` C#
 int value = 1;
@@ -862,7 +863,7 @@ do
 ```
 
 # Data type
-- Data es un valor almacenado en la memoria de la computadora como una ser de bit..
+- Data es un valor almacenado en la memoria de la computadora como una serie de bits.
 - Un bit es un switch binario simple representado como 0 o 1, o off y on.
 - Byte es la combinación de 8 bits en una secuencia.
 - La computadora usa un sistema como ASCII para usar un single byte para representar upper y lowercase letters, números, tab, ackspace, newline y varios símbolos matemáticos.
@@ -870,7 +871,7 @@ do
 
 ## Value Types vs reference types
 - Reference types incluyen arreglos, clase y strings. Reference types son tratados diferente que value types con respecto a la manera en que almacenan los valores cuando la aplicación se ejecuta.
-- Las variables de tipo referencia almacenan referencias a sus datos (objetos), es decir, apuntan a valores de datos almacenados en otro lugar.
+- Las variables de tipo referencia (variables of reference types) almacenan referencias a sus datos (objetos), es decir, apuntan a valores de datos almacenados en otro lugar.
 - Las variables de tipo valor (variables of value types) contienen directamente sus datos. 
 - Un Value type variable almacena su valor directamente en un área de almacenamiento llamado el **stack**.
     - Una variable de tipo valor (value type variable) almacena sus valores directamente en un área de almacenamiento llamada pila (stack). La pila es la memoria asignada al código que se está ejecutando actualmente en la CPU (también conocida como marco de pila o marco de activación). Cuando el marco de pila ha terminado de ejecutarse, los valores de la pila se eliminan.
@@ -913,6 +914,10 @@ Console.WriteLine(shortenedString);
 - Un signed value usa sus bytes para representar un número igual de números positivos y negativos.
 - Un unsiged type usa sus bytes para representar solo números positivos.
 
+#### Recap
+- Values are stored as bits, which are simple on / off switches. Combining enough of these switches allows you to store just about any possible value.
+- There are two basic categories of data types: value and reference types. The difference is in how and where the values are stored by the computer as your program executes.
+- Simple value types use a keyword alias to represent formal names of types in the .NET Library.
 
 ## Choose specialty complex types for special situations
 https://learn.microsoft.com/en-us/training/modules/csharp-choose-data-type/6-choose-right-data-type
@@ -1136,6 +1141,7 @@ Reversed...
 - Array.Clear() permite quitar conteido de elementos especificos en arreglo y reemplazarlos con el valor de arreglo por defecto.
     - Para un arreglo string el valor por defecto es null, mientras que para int es 0.
     - Los elementos limpiados ya no hacen referencia a un string en memoria. El elemento apunta a nothing.
+        - Un elemento null es un valor que indica que la variable apunta a nada en la memoria.
     - Se pasa el arreglo, el índice de inicio y la cantidad de elementos a limpiar.
 - Array.Resize() agrega o quita elementos del arreglo.
 
@@ -1183,6 +1189,339 @@ Clearing 2 ... count: 4
 -- B12
 -- A13
 ```
+
+### Invocar  string helper method on a cleared element
+- C# no tiene el tiempo para convertir implicitamente null a un string vacío cuando se intenta llamar al método, razón por la cual una exepción es thrown.
+
+### Resize arreglo para agregar más elementos
+``` C#
+string[] pallets = { "B14", "A11", "B12", "A13" };
+Console.WriteLine("");
+
+Array.Clear(pallets, 0, 2);
+Console.WriteLine($"Clearing 2 ... count: {pallets.Length}");
+foreach (var pallet in pallets)
+{
+    Console.WriteLine($"-- {pallet}");
+}
+
+Console.WriteLine("");
+Array.Resize(ref pallets, 6);
+Console.WriteLine($"Resizing 6 ... count: {pallets.Length}");
+
+pallets[4] = "C01";
+pallets[5] = "C02";
+
+foreach (var pallet in pallets)
+{
+    Console.WriteLine($"-- {pallet}");
+}
+```
+- Se centra la atención en Array.Resize(ref pallets, 6);
+    - Se incova al método Resize() pasando el arreglo pallets por medio de reference con la palabra reservada ref. (Investigar más sobre el tema. Esto se leyó en https://learn.microsoft.com/en-us/training/modules/csharp-arrays-operations/3-exercise-clear-resize). 
+    - Los nuevos elementos se agregan al final de los elementos actuales.
+        - Los nuevos dos elementos son null hata que se les asigne un valor.
+
+### Resize Array para eliminar elementos.
+``` C#
+Array.Resize(ref pallets, 3);
+Console.WriteLine($"Resizing 3 ... count: {pallets.Length}");
+
+foreach (var pallet in pallets)
+{
+    Console.WriteLine($"-- {pallet}");
+}
+```
+- Con este código se eleiminan los tres últimos elementos del arreglo, ya que antes tenía longitud de 6.
+
+### Can you remove null elements from an array?
+- The best way to empty elements from an array would be to count the number of non-null elements by iterating through each item and increment a variable (a counter). 
+- Next, you would create a second array that is the size of the counter variable. Finally, you would loop through each element in the original array and copy non-null values into the new array.
+
+### Recap
+- Use the Clear() method to empty the values out of elements in the array.
+- Use the Resize() method to change the number of elements in the array, removing or adding elements from the end of the array.
+- New array elements and cleared elements are null, meaning they don't point to a value in memory.
+
+## String data type's Array methods
+- The variables of type string have many built-in methods that convert a single string into either an array of smaller strings, or an array of individual characters.
+- When processing data from other computer systems, sometimes it's formatted or encoded in a way that's not useful for your purposes. In those cases, you can use the string data type's Array methods to parse a larger string into an array.
+
+### toCharArrary() to reverse a string
+``` C#
+string value = "abc123";
+char[] valueArray = value.ToCharArray();
+Array.Reverse(valueArray);
+string result = new string(valueArray);
+Console.WriteLine(result);
+```
+- La expresión new string() crea una nueva instancia vacía de la clase System.String, la cual es la misma que el tipo de dato string en C#.
+    - Le pasa el arreglo char como un constructor.
+
+### Combinar chars en un string seperado por comas usando Join()
+``` C#
+string value = "abc123";
+char[] valueArray = value.ToCharArray();
+Array.Reverse(valueArray);
+// string result = new string(valueArray);
+string result = String.Join(",", valueArray);
+Console.WriteLine(result);
+
+Output 
+3,2,1,c,b,a
+```
+
+### Split el stirng de valores separados por coma en un arreglo de strings
+- Se usa el método Split() para crear un arreglo.
+
+``` C#
+string value = "abc123";
+char[] valueArray = value.ToCharArray();
+Array.Reverse(valueArray);
+// string result = new string(valueArray);
+string result = String.Join(",", valueArray);
+Console.WriteLine(result);
+
+string[] items = result.Split(',');
+foreach (string item in items)
+{
+    Console.WriteLine(item);
+}
+
+Output
+3,2,1,c,b,a
+3
+2
+1
+c
+b
+a
+```
+
+### Recap
+- Use methods like ToCharArray() and Split() to create an array
+- Use methods like Join(), or create a new string passing in an array of char to turn the array back into a single string
+
+# Format alphanumeric data for presentation
+## Composite Formatting
+- Composite Formatting usa numbered placeholders dentro de un sting.
+    - En el Run time todo dentro de braces is resolved to a value que también se pasa en base a su posición.
+    - Data types and variables of a given data type have built-in "helper methods" to make certain tasks easy.
+    - The literal string "{0} {1}!" forms a template, parts of which are replaced at run time.
+    - The token {0} is replaced by the first argument after the string template, in other words, the value of the variable first.
+    - The token {1} is replaced by the second argument after the string template, in other words, the value of the variable second.
+``` C#
+string first = "Hello";
+string second = "World";
+string result = string.Format("{0} {1}!", first, second);
+Console.WriteLine(result);
+
+Output
+Hello World!
+```
+
+- Observaciones:
+    - For the first Console.WriteLine() statement, observe that the tokens can be arranged in any order. The sample code has {1} before {0}.
+    - For the second Console.WriteLine() statement, observe that the tokens can be reused with three instances of {0}. Also, the second variable argument, second, isn't used. Yet, the code still runs without error.
+``` C#
+string first = "Hello";
+string second = "World";
+Console.WriteLine("{1} {0}!", first, second);
+Console.WriteLine("{0} {0} {0}!", first, second);
+
+Output
+World Hello!
+Hello Hello Hello!
+```
+
+- String interpolation simplifica composite formatting, y se prefiere su uso.
+
+Queda pendiente terminar
+https://learn.microsoft.com/en-us/training/modules/csharp-format-strings/3-exercise-string-interpolation
+https://learn.microsoft.com/en-us/training/modules/csharp-modify-content/
+
+# Creación de Métodos
+- El proceso de crear métodos empieza con un method signature para declarar el tipo de dato que retorna el método, su nombra y los parámetros de entrada.
+``` C#
+void SayHello();
+```
+
+- La definición del método se realiza usando brackets.
+
+``` C#
+void SayHello() 
+{
+    Console.WriteLine("Hello World!");
+}
+```
+
+- Method execution. When you call a method, the code in the method body will be executed. This means execution control is passed from the method caller to the method. Control is returned to the caller after the method completes its execution
+
+## Parámetros pasados por valor y por referencia
+- Value types variables son copiados en el método. Cada variable tiene su propia copia del valor, por lo que la variable original no se ve modificada.
+- Con reference types, la dirección del valor se pasa al método. La variable dada al método referencia al valor en esa dirección, por lo que las operaciones sobre la variable afectan al valor referenciado por la otra.
+    - string es un reference type, pero es inmutable. Esto quiere decir que su valor no puede cambiar una vez que se le asignó, hecho que no sucede con los arrays.
+    - Strings cant bbe altered once assigned, they can only be overwritten with a new value.
+``` C#
+int[] array = {1, 2, 3, 4, 5};
+
+PrintArray(array);
+Clear(array);
+PrintArray(array);
+
+void PrintArray(int[] array) 
+{
+    foreach (int a in array) 
+    {
+        Console.Write($"{a} ");
+    }
+    Console.WriteLine();
+}
+
+void Clear(int[] array) 
+{
+    for (int i = 0; i < array.Length; i++) 
+    {
+        array[i] = 0;
+    }
+}
+
+Output
+1 2 3 4 5 
+0 0 0 0 0
+```
+
+## Declarar parámetros opcionales
+- Se realiza esto al asinar un valor por defecto a los parámetros.
+
+``` C#
+void RSVP(string name, int partySize = 1, string allergies = "none", bool inviteOnly = true)
+```
+
+## Named arguments
+- Se realiza al especificar el nombre del parámetro seguido por el valor del argumento.
+
+``` C#
+RSVP("Tony", inviteOnly: true, allergies: "Jackfruit",  partySize: 1);
+```
+
+## Recap
+- Variables can be categorized as value types and reference types.
+- Value types directly contain values, and reference types store the address of the value.
+- Methods using value type arguments create their own copy of the values.
+- Methods that perform changes on an array parameter affect the original input array.
+- String is an immutable reference type.
+- Methods that perform changes on a string parameter don't affect the original string.
+- Parameters are made optional by setting a default value in the method signature.
+- Named arguments are specified with the parameter name, followed by a colon and the argument value.
+- When combining named and positional arguments, you must use the correct order of parameters.
+
+# Métodos que retornan arreglos
+``` C#
+int[] TwoCoins(int[] coins, int target) 
+{
+    return  new int[0];
+}
+```
+
+``` C#
+int[] TwoCoins(int[] coins, int target) 
+{
+    for (int curr = 0; curr < coins.Length; curr++) 
+    {
+        for (int next = curr + 1; next < coins.Length; next++) 
+        {
+
+        }
+    }
+
+    return  new int[0];
+}
+```
+
+``` C#
+int target = 30;
+int[] coins = new int[] {5, 5, 50, 25, 25, 10, 5};
+int[,] result = TwoCoins(coins, target);
+Output
+Change found at positions:
+0,3
+0,4
+1,3
+1,4
+3,6
+```
+
+# Exceptions
+- In C#, errors in the program at runtime are propagated through the program by using a mechanism called exceptions. Exceptions are thrown by code that encounters an error and caught by code that can correct the error. Exceptions can be thrown by the .NET runtime or by code in a program. Exceptions are represented by classes derived from Exception. Each class identifies the type of exception and contains properties that have details about the exception.
+- Exceptions are represented in code as objects, which means they're an instance of a class. The .NET class library provides exception classes that're accessed in code just like other .NET classes.
+    - Although they are sometimes used interchangeably, a class and an object are different things. A class defines a type of object, but it's not an object itself. An object is a concrete entity based on a class.
+- More precisely, exceptions are types, represented by classes that are all ultimately derived from System.Exception. An exception class that's derived from Exception includes information that identifies the type of exception and contains properties that provide details about the exception. A more detailed examination of the Exception class is included later in this module.
+- You can think of an exception as a variable that has extra capabilities. You can do the same type of things with exceptions that you do with variables, for example:
+    - You can create different types of exceptions.
+    - You can access the contents of an exception.
+
+## Throw y catch
+- An exception gets created at runtime when your code produces an error.
+- The exception can be treated like a variable that has some extra capabilities.
+- You can write code that accesses the exception and takes corrective action.
+
+### Recap
+- Exceptions are used in C# to propagate errors at runtime, and are represented by classes derived from the Exception class.
+- Exceptions are thrown by code that encounters an error and caught by code that can correct the error.
+- When an exception is caught, code can access its contents and take corrective action to mitigate the error.
+- The .NET runtime generates exceptions when it detects an error and the exception contains information about the type of error that occurred.
+
+## Try Catch
+``` C#
+try
+{   
+   // try code block - code that may generate an exception
+}
+catch
+{   
+   // catch code block - code to handle an exception
+}
+finally
+{   
+   // finally code block - code to clean up resources
+}
+```
+- Finally. To clean up any resources that are allocated in a try block.
+- The C# language also enables your code to generate an exception object by using the throw keyword. Exception handling scenarios that include using the throw keyword to generate exceptions is covered in a separate module on Microsoft Learn.
+- The try code block contains the guarded code that may cause an exception. If the code within a try block causes an exception, the exception is handled by a corresponding catch block.
+- The catch code block contains the code that's executed when an exception is caught. The catch block can handle the exception, log it, or ignore it. A catch block can be configured to execute when any exception type occurs, or only when a specific type of exception occurs.
+- The finally code block contains code that executes whether an exception occurs or not. The finally block is often used to clean up any resources that are allocated in a try block. For example, ensuring that a variable has the correct or required value assigned to it.
+
+- The try-catch pattern consists of a try block followed by one or more catch clauses. Each catch block is used to specify handlers for different exceptions.
+- The try-finally pattern consists of a try block followed by a finally block. Typically, the statements of a finally block run when control leaves a try statement.
+- The try-catch-finally pattern implements all three types of exception handling blocks. A common scenario for the try-catch-finally pattern is when resources are obtained and used in a try block, exceptional circumstances are managed in a catch block, and the resources are released or otherwise managed in the finally block.
+
+## Exception handling and the call stack
+- You'll often see the term "call stack unwinding" when you read about exception handling and the exception handling process. To understand this term, you need to understand the call stack and how it's used to track the "stack" of method calls during code execution.
+- You can think of the call stack like a tower of blocks. When you build a tower, you start with just one block. Each time you add a block to the tower, you place it on top of the existing blocks. When your application starts running in the debugger, the entry point to your application is the first layer added to the call stack (the first block of the tower). Each time a method calls another method, the new method is added to the top of the stack. When your code exits out of a method, the method is removed from the call stack.
+    - For a console application, the entry point to your application is the top-level statements. In the Visual Studio Code call stack, this entry point is referred to as the Main method
+- Call stack unwinding is the process that the .NET runtime uses when a C# program encounters an error. It's the same process that you just reviewed.
+
+Returning to the block tower analogy, when you need to remove a block from the tower, you start from the top and remove each block until you reach the one you need. This process is similar to how call stack unwinding works, where each call layer in the stack is like a block in the tower. When the runtime needs to unwind the call stack, it starts from the top and removes each call layer until it reaches the one that has what it needs. In this case, the call layer that it needs is the method that has a catch clause that can handle the exception that occurred.
+
+### Recap
+- Common scenarios that may require exception handling include user input, data processing, file I/O operations, database operations, and network communication.
+- Exception handling in C# is implemented using try, catch, and finally keywords. Each keyword has an associated code block that serves a specific purpose.
+- Exceptions are represented as types and derived from the System.Exception class in .NET. Exceptions contain information that identifies the type of exception, and properties that provide additional details.
+- When an exception occurs, the .NET runtime searches for the nearest catch clause that can handle it. The search starts with the method where the exception was thrown, and moves down the call stack if necessary.
+
+## Compiler-generated exceptions
+- The .NET runtime throws exceptions when basic operations fail. Here's a short list of runtime exceptions and their error conditions:
+- ArrayTypeMismatchException: Thrown when an array can't store a given element because the actual type of the element is incompatible with the actual type of the array.
+- DivideByZeroException: Thrown when an attempt is made to divide an integral value by zero.
+- FormatException: Thrown when the format of an argument is invalid.
+- IndexOutOfRangeException: Thrown when an attempt is made to index an array when the index is less than zero or outside the bounds of the array.
+- InvalidCastException: Thrown when an explicit conversion from a base type to an interface or to a derived type fails at runtime.
+- NullReferenceException: Thrown when an attempt is made to reference an object whose value is null.
+- OverflowException: Thrown when an arithmetic operation in a checked context overflows.
+
+
 
 # Glosario
 ## Expresion
