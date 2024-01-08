@@ -19,6 +19,7 @@ namespace api2.Data
 
         public DbSet<Stock> Stock { get; set; }// Se utiliza para recuperar los datos en base de datos.
         // DbSet Va a retornar los datos en la forma que se desee. Se habla de Deffered execution luego.
+        // El nombre despues de <> debe coincidir con el nombre en la base de datos: dbo.Stock
 
         public DbSet<Comment> Comments { get; set; }
     }

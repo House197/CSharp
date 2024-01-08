@@ -1,4 +1,5 @@
 # Instalaciones
+https://learn.microsoft.com/en-us/training/modules/build-web-api-minimal-spa/9-knowledge-check
 ## Visual Studio
 - Es posible trabajar con Visual Studio Code, sin embargo se requiere instalar Visual Studio para tener todas las dependencias.
 - Se dirige a la página <a href='https://visualstudio.microsoft.com/es/'>Visual Studio</a> y se descarga **Community 2022**.
@@ -26,6 +27,7 @@ https://dotnet.microsoft.com/es-es/download
     - Microsoft.EntityFrameworkCore.SqlServer
     - Microsoft.EntityFrameworkCore.Tools
     - Microsoft.EntityFrameworkCore.Design
+    - Microsoft.AspNet.Mvc
 - Se abre Nuget Gallery con Ctrl + Shift + p para poder instalar lo necesario.
 - En el archivo de api2.csproj vienen las especificaciones del proyecto, en donde al momento de instalar los paquetes se debe seleccionar la casilla con el nombre de ese archivo, ya que corresponde con el del proyecto que se trabaja.
 
@@ -90,6 +92,14 @@ app.Run();
 ### ApplicationDBContext
 - Es una clase general (un objeto grande) que permite buscar tablas individuales.
 - Al crear el archivo y llenarlo con el código requerido, se debe establecer la conexión a base de datos en Program.cs
+- El tipo está en singular, seguido por el plural. (El plural debe coincidir con el nombre en base de datos, en este caso es Stock)
+
+``` C#
+        public DbSet<Stock> Stock { get; set; }// Se utiliza para recuperar los datos en base de datos.
+        // DbSet Va a retornar los datos en la forma que se desee. Se habla de Deffered execution luego.
+
+        public DbSet<Comment> Comments { get; set; }
+```
 
 ## Creación de tablas en SQL Server
 - Se ingresa a SQL Management, se selecciona con click derecho a la sección de Databases y se crea una base de datos, la cual solo hay que agregarle un nombre.
@@ -142,3 +152,24 @@ dotnet tool update --global dotnet-ef # Se debe ejecutar después de realizar lo
 - En el proyecto de api2.csproj se debe cambiar a falso la seccion de InvariantGlobalization
     
 - Cuando se corre el comando de migrations add se crea automáticamente la carpeta de Migrations,
+
+## Controllers
+- Por medio de ApplicationDBContext (definido en Data), se accede a los métodos Stocks y Comments definidos para poder efectuar las operaciones deseadas en la base de datos.
+- Los controladores se deben agregar a Program.cs por medio de builder.Services.AddControllers() (se coloca al inicio), y app.MapControllers() (Se coloca justo antes de la última línea, la cual es app.Run()).
+
+### Deferred 
+- En el controlador de StockControllers, en el controlador para recuperar de base de datos se agrega toList:
+
+``` C#
+        [HttpGet]
+        public IActionResult GetAll()
+        {
+            var stocks = _context.Stocks.toList();
+        }
+```
+- Eso va a retornar una lista como objeto.
+
+### Prueba
+- Para poder ejecutar la prueba se tuvo que instalar el paquete: Microsoft.AspNet.Mvc, y colocar lo siguiente en el archivode StockController.cs
+  - using Microsoft.AspNetCore.Mvc;
+- Se ejecuta el comando dotnet watch run.

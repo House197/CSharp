@@ -5,8 +5,11 @@
 docker container --help
 docker image --help
 ```
+
 # Eliminar contenedores
 ## Eliminar contenedores por medio de ID o nombre
+- Basta con colocar los primeros dígitos de ID para referirse al contenedor.
+- Se separan con espacios los IDs para indicar múltiples contenedores para eliminar.
 ``` bash
 docker container rm 345 543 543
 ```
@@ -14,3 +17,29 @@ docker container rm 345 543 543
 ``` bash
 docker container prune
 ```  
+
+# Enlistar contenedores
+## Enlistar contenedores que están corriendo
+``` bash
+docker container ls
+```
+
+## Enlistar todos lo contenedores, estén corriendo o no
+``` bash
+docker container ls -a
+```
+
+# Variables de entorno
+- Son útiles al momento de levantar un contenedor.
+- Pueden venir de diferentes formas:
+    - Variables definidas por una imagen determinada.
+``` bash
+docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -d postgres
+```
+- Se pueden consultar en la descripción de la imagen en Docker Hub.
+
+# Descargar una imagen
+- Si no se especifica el tag entonces toma el latest.
+``` bash
+docker pull <imageName>
+```
