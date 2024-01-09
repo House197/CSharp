@@ -173,3 +173,75 @@ dotnet tool update --global dotnet-ef # Se debe ejecutar después de realizar lo
 - Para poder ejecutar la prueba se tuvo que instalar el paquete: Microsoft.AspNet.Mvc, y colocar lo siguiente en el archivode StockController.cs
   - using Microsoft.AspNetCore.Mvc;
 - Se ejecuta el comando dotnet watch run.
+
+
+## DTOs (Data Transfer Object)
+- El 90% de los DTO caen en la categoría response request format.
+- It spruces up the data (aclara los datos.)
+- Response
+  - No siempre se desea retornar todo un objeto llenos de información al usuario, sino que se desea retornar únicamente un objeto con los campos que el cliente va a ocupar.
+    - Por ejemplo, con un usuario solo se desea retornar el usuario y no la contraseña.
+- Request  
+  - Tiene que ver con data validation.
+
+### Response
+- Se crea la carpeta de Dto en el route de la aplicación.
+- Se crea una subcarpeta por cada modelo que se tiene.
+ 
+#### StockDto.cs
+- Se pegan del modelo Stock los campos que se desean retornar al cliente, tomando por ejemplo que solo no se desean retornar los comentarios.
+  - Se pueden quitar las data annotations que se definen en algunos campos del modelo de Stock.
+
+### Mappers
+- Se crea la carpeta al nivel del root.
+#### StockMappers.cs
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using api2.Dtos.Stock;
+using api2.Models;
+
+namespace api2.Mappers
+{
+    // Van a ser extension methods, por eso se coloca static.
+    public static class StockMappers
+    {   // Se va a crear un nuevo objeto y se colocan los campos que se desean devolver.
+        public static StockDto ToStockDto(this Stock stockModel)
+        {   // Los campos corresponden con el nombre colocado en el modelo, por eso empiezan con mayúscula pero en la db empiezan con minúscula.
+            return new StockDto
+            {
+                Id = stockModel.Id,
+                CompanyName = stockModel.CompanyName,
+                Purchase = stockModel.Purchase,
+                String = stockModel.String,
+                LastDiv = stockModel.LastDiv,
+                Industry = stockModel.Industry
+            };
+        }
+    }
+}
+```
+
+- Se define una extensión de método que va a retornar un nuevo objeto con los campos deseados.
+- Luego, en el cotrolador StockController.cs
+  - En el controlador de HttpGet, GetAll se encadena Select.
+    - Select es un Mapper, en donde al igual que en JavaScript se ocupa una arrow function.
+    - Select es la versión .NET de MAP.
+      - Entonces, va a mapear cada elemento para aplicar ToStockDto().
+      - Va a retornar una lista inmutable de ToStockDto.
+
+``` C#
+       public IActionResult GetAll()
+        {
+            var stocks = _context.Stock.ToList()
+            .Select(stock => stock.ToStockDto());
+            // Stock se definió en Data, en ApplicationDBContext
+
+            return Ok(stocks);
+        }
+```
+
+- Para el caso de la API que solicita un ID se coloca directo ToStockDTO, ya que retorna un solo objeto.

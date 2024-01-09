@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using api2.Data;
 using api2.Models;
+using api2.Mappers;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -25,7 +26,7 @@ namespace api2.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            var stocks = _context.Stock.ToList();
+            var stocks = _context.Stock.ToList().Select(stock1 => stock1.ToStockDto());
             // Stock se definió en Data, en ApplicationDBContext
 
             return Ok(stocks);
@@ -42,7 +43,7 @@ namespace api2.Controllers
                 return NotFound();
             }
 
-            return Ok(stock);
+            return Ok(stock.ToStockDto());
         }
     }
 }
