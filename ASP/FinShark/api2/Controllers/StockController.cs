@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using api2.Data;
 using api2.Models;
 using api2.Mappers;
+using api2.Dtos.Stock;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -45,5 +46,17 @@ namespace api2.Controllers
 
             return Ok(stock.ToStockDto());
         }
+
+        // Controlador para POST
+        [HttpPost]
+        // FromBody es lo mismo que req.body
+        public IActionResult Create([FromBody] CreateStockRequestDto stockDto)
+        {
+            var stockModel = stockDto.ToStockFromCreateDTO();
+            _context.Stock.Add(stockModel);
+            _context.SaveChanges();
+            return CreatedAtAction(nameof(GetById), new { id = stockModel.Id }, stockModel.ToStockDto());
+        }
+
     }
 }

@@ -245,3 +245,150 @@ namespace api2.Mappers
 ```
 
 - Para el caso de la API que solicita un ID se coloca directo ToStockDTO, ya que retorna un solo objeto.
+
+### Request
+#### CreateStockRequestDto.cs
+- Se crea para limitar la cantidad de información que el usuario puede enviar a la API, de modo que se bloquea el envío el ID por ejemplo.
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace api2.Dtos.Dtock
+{
+    public class CreateStockRequestDto
+    {
+        public string String { get; set; } = string.Empty; // Para evitar null reference errors
+        public string CompanyName { get; set; } = string.Empty;
+        public decimal Purchase { get; set; }
+        public decimal LastDiv { get; set; }
+        public string Industry { get; set; } = string.Empty;
+    }
+}
+```
+
+##### Mapper para CreateStockRequestDto
+- Se crea en el archivo de StockMappers.cs ubicado en Mappers.
+  - Se crea el Mapper ToStockFromCreateDTO para definir qué campos tiene que mandar el cliene al momento de hacer post.
+  - El Mapper es un método de extensión.
+  - Recibe al DTO CreateStockRequestDto y pasa el objeto stockModel.
+  - Se crea un nuevo objeto para poder pasarlo al método _context.Stock.Add()
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using api2.Dtos.Stock;
+using api2.Models;
+
+namespace api2.Mappers
+{
+    // Van a ser extension methods, por eso se coloca static.
+    public static class StockMappers
+    {   // Se va a crear un nuevo objeto y se colocan los campos que se desean devolver.
+        public static StockDto ToStockDto(this Stock stockModel)
+        {   // Los campos corresponden con el nombre colocado en el modelo, por eso empiezan con mayúscula pero en la db empiezan con minúscula.
+            return new StockDto
+            {
+                Id = stockModel.Id,
+                CompanyName = stockModel.CompanyName,
+                Purchase = stockModel.Purchase,
+                String = stockModel.String,
+                LastDiv = stockModel.LastDiv,
+                Industry = stockModel.Industry
+            };
+        }
+
+        public static Stock ToStockFromCreateDTO(this CreateStockRequestDto stockModel)
+        {
+            return new Stock
+            {
+                CompanyName = stockModel.CompanyName,
+                Purchase = stockModel.Purchase,
+                String = stockModel.String,
+                LastDiv = stockModel.LastDiv,
+                Industry = stockModel.Industry
+            };
+        }
+    }
+}
+```
+
+## POST
+- En la mayoría de los casos se usa Entity Framework.
+
+``` C#
+_context.Stocks.Add(json); // Va a empezar tener un registro de la data pero no va a realizar el campo en base de datos.
+_context.SaveChanges();
+```
+
+- En el controlador StockController se agrega el método [HttpPost]
+  - Se define el controlador.
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using api2.Data;
+using api2.Models;
+using api2.Mappers;
+using api2.Dtos.Stock;
+using Microsoft.EntityFrameworkCore;
+
+
+namespace api2.Controllers
+{
+    [Route("api/stock")]
+    [ApiController]
+    public class StockController : ControllerBase
+    {
+        // ctor para colocar constructor
+        // En el parámetro se coloca la DB por medio de DBContext
+        private readonly ApplicationDBContext _context;
+        public StockController(ApplicationDBContext context)
+        {
+            _context = context;
+        }
+
+        [HttpGet]
+        public IActionResult GetAll()
+        {
+            var stocks = _context.Stock.ToList().Select(stock1 => stock1.ToStockDto());
+            // Stock se definió en Data, en ApplicationDBContext
+
+            return Ok(stocks);
+        }
+
+        // Por medio de model binding .NET va a extraer el stirng {id}, lo convierte a int y lo pasa al código
+        [HttpGet("{id}")]
+        public IActionResult GetById([FromRoute] int id)
+        {
+            var stock = _context.Stock.Find(id);
+
+            if(stock == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(stock.ToStockDto());
+        }
+
+        // Controlador para POST
+        [HttpPost]
+        // FromBody es lo mismo que req.body
+        public IActionResult Create([FromBody] CreateStockRequestDto stockDto)
+        {
+            var stockModel = stockDto.ToStockFromCreateDTO();
+            _context.Stock.Add(stockModel);
+            _context.SaveChanges();
+            return CreatedAtAction(nameof(GetById), new { id = stockModel.Id }, stockModel.ToStockDto());
+        }
+
+    }
+}
+```

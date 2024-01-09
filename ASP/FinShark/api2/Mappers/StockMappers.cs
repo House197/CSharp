@@ -22,5 +22,17 @@ namespace api2.Mappers
                 Industry = stockModel.Industry
             };
         }
+
+        public static Stock ToStockFromCreateDTO(this CreateStockRequestDto stockModel)
+        {
+            return new Stock
+            {
+                CompanyName = stockModel.CompanyName,
+                Purchase = stockModel.Purchase,
+                String = stockModel.String,
+                LastDiv = stockModel.LastDiv,
+                Industry = stockModel.Industry
+            };
+        }
     }
 }
