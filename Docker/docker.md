@@ -6,6 +6,15 @@ docker container --help
 docker image --help
 ```
 
+# Volúmenes y Redes
+- Se va a crear una red para unir una DB y PHP MyAdm.
+
+# Ver Logs de un contenedor
+``` bash
+docker container logs <container id>
+docker container logs --follow CONTAINER
+```
+
 # Eliminar contenedores
 ## Eliminar contenedores por medio de ID o nombre
 - Basta con colocar los primeros dígitos de ID para referirse al contenedor.
@@ -43,3 +52,4 @@ docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -d postgre
 ``` bash
 docker pull <imageName>
 ```
+

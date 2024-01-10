@@ -1,5 +1,7 @@
 # Instalaciones
 https://learn.microsoft.com/en-us/training/modules/build-web-api-minimal-spa/9-knowledge-check
+
+https://learn.microsoft.com/en-us/aspnet/core/tutorials/first-web-api?view=aspnetcore-8.0&tabs=visual-studio
 ## Visual Studio
 - Es posible trabajar con Visual Studio Code, sin embargo se requiere instalar Visual Studio para tener todas las dependencias.
 - Se dirige a la página <a href='https://visualstudio.microsoft.com/es/'>Visual Studio</a> y se descarga **Community 2022**.
