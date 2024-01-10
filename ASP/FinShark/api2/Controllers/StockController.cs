@@ -25,19 +25,21 @@ namespace api2.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
-            var stocks = _context.Stock.ToList().Select(stock1 => stock1.ToStockDto());
+            var stocks = await _context.Stock.ToListAsync();
+            
+            var stockDto = stocks.Select(stock1 => stock1.ToStockDto());
             // Stock se definió en Data, en ApplicationDBContext
 
-            return Ok(stocks);
+            return Ok(stockDto);
         }
 
         // Por medio de model binding .NET va a extraer el stirng {id}, lo convierte a int y lo pasa al código
         [HttpGet("{id}")]
-        public IActionResult GetById([FromRoute] int id)
+        public async Task<IActionResult> GetById([FromRoute] int id)
         {
-            var stock = _context.Stock.Find(id);
+            var stock = await _context.Stock.FindAsync(id);
 
             if(stock == null)
             {
@@ -50,11 +52,11 @@ namespace api2.Controllers
         // Controlador para POST
         [HttpPost]
         // FromBody es lo mismo que req.body
-        public IActionResult Create([FromBody] CreateStockRequestDto stockDto)
+        public async Task<IActionResult> Create([FromBody] CreateStockRequestDto stockDto)
         {
             var stockModel = stockDto.ToStockFromCreateDTO();
-            _context.Stock.Add(stockModel);
-            _context.SaveChanges();
+            await _context.Stock.AddAsync(stockModel);
+            await _context.SaveChangesAsync();
             return CreatedAtAction(nameof(GetById), new { id = stockModel.Id }, stockModel.ToStockDto());
         }
 
@@ -62,10 +64,10 @@ namespace api2.Controllers
         [HttpPut]
         [Route("{id}")]
         // FromRoute es equivalente a req.params
-        public IActionResult Update([FromRoute] int id, [FromBody] UpdateStockRequestDto updateDto)
+        public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateStockRequestDto updateDto)
         {
             // Se busca el valor deseado.
-            var stockModel = _context.Stock.FirstOrDefault(x => x.Id == id);
+            var stockModel = await _context.Stock.FirstOrDefaultAsync(x => x.Id == id);
             if(stockModel == null){
                 return NotFound();
             }
@@ -76,7 +78,7 @@ namespace api2.Controllers
             stockModel.LastDiv = updateDto.LastDiv;
             stockModel.Industry = updateDto.Industry;
 
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             return Ok(stockModel.ToStockDto());
         }
@@ -84,16 +86,16 @@ namespace api2.Controllers
         // Controlador para DELETE
         [HttpDelete]
         [Route("{id}")]
-        public IActionResult Delete([FromRoute] int id)
+        public async Task<IActionResult> Delete([FromRoute] int id)
         {
-            var stockModel = _context.Stock.FirstOrDefault(x => x.Id == id);
+            var stockModel = await _context.Stock.FirstOrDefaultAsync(x => x.Id == id);
             if(stockModel == null)
             {
                 return NotFound();
             } 
 
-            _context.Stock.Remove(stockModel);
-            _context.SaveChanges();
+            _context.Stock.Remove(stockModel); // No es una operación asíncrona.
+            await _context.SaveChangesAsync();
 
             return NoContent();
         }
