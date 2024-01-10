@@ -58,5 +58,45 @@ namespace api2.Controllers
             return CreatedAtAction(nameof(GetById), new { id = stockModel.Id }, stockModel.ToStockDto());
         }
 
+        // Controlador para UPDATE
+        [HttpPut]
+        [Route("{id}")]
+        // FromRoute es equivalente a req.params
+        public IActionResult Update([FromRoute] int id, [FromBody] UpdateStockRequestDto updateDto)
+        {
+            // Se busca el valor deseado.
+            var stockModel = _context.Stock.FirstOrDefault(x => x.Id == id);
+            if(stockModel == null){
+                return NotFound();
+            }
+            // Se actualizan todos los campos por medio del body
+            stockModel.String = updateDto.String;
+            stockModel.CompanyName = updateDto.CompanyName;
+            stockModel.Purchase = updateDto.Purchase;
+            stockModel.LastDiv = updateDto.LastDiv;
+            stockModel.Industry = updateDto.Industry;
+
+            _context.SaveChanges();
+
+            return Ok(stockModel.ToStockDto());
+        }
+
+        // Controlador para DELETE
+        [HttpDelete]
+        [Route("{id}")]
+        public IActionResult Delete([FromRoute] int id)
+        {
+            var stockModel = _context.Stock.FirstOrDefault(x => x.Id == id);
+            if(stockModel == null)
+            {
+                return NotFound();
+            } 
+
+            _context.Stock.Remove(stockModel);
+            _context.SaveChanges();
+
+            return NoContent();
+        }
+
     }
 }

@@ -394,3 +394,96 @@ namespace api2.Controllers
     }
 }
 ```
+
+## UPDATE
+- Modifica a todo aunque solo se desea modificar un campo.
+- Se tienen los siguientges pasos:
+    - Se busca por el valor.
+        - var stock = firstOrDefault(1)
+    - Cuando se encuentra el valor se modifica el objeto:
+        - stock.companyName = "Microsoft"
+    - NOTA: Con los dos pasos anteriores Entity Framework está teniendo un registro, es decir, lleva registro de los Updates que se hacen.
+    - Se guarda los cambios en base de datos con saveChanges()
+<img src='ASP\FinShark\ImagenesC\UPDATE.png'></img>
+
+### Controlador StockController.cs
+- Se usa HttpPut.
+- Se usa tanto FromRoute como FromBody.
+    - Con FromRoute solo se especifica que se espera la variable id, la cual es un entero.
+    - Con FromBody se debe especificar el DTO para Update, por lo que primero se crea.
+- En la lógica de Update, se deben asginar a todos los campos con el cuerpo del Update.
+
+``` C#
+        // Controlador para UPDATE
+        [HttpPut]
+        [Route("{id}")]
+        // FromRoute es equivalente a req.params
+        public IActionResult Update([FromRoute] int id, [FromBody] UpdateStockRequestDto updateDto)
+        {
+            // Se busca el valor deseado.
+            var stockModel = _context.Stock.FirstOrDefault(x => x.Id == id);
+            if(stockModel == null){
+                return NotFound();
+            }
+            // Se actualizan todos los campos por medio del body
+            stockModel.String = updateDto.String;
+            stockModel.CompanyName = updateDto.CompanyName;
+            stockModel.Purchase = updateDto.Purchase;
+            stockModel.LastDiv = updateDto.LastDiv;
+            stockModel.Industry = updateDto.Industry;
+
+            _context.SaveChanges();
+
+            return Ok(stockModel.ToStockDto());
+        }
+```
+
+#### DTO para Stock, UpdateStockRequestDto.cs
+- Tiene el mismo contenido que CreateStockRequestDto.
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace api2.Dtos.Stock
+{
+    public class UpdateStockRequestDto
+    {
+        public string String { get; set; } = string.Empty; // Para evitar null reference errors
+        public string CompanyName { get; set; } = string.Empty;
+        public decimal Purchase { get; set; }
+        public decimal LastDiv { get; set; }
+        public string Industry { get; set; } = string.Empty;
+    }
+}
+```
+
+## DELETE
+- Los pasos para DELETE son:
+    - Hallar el valor deseado:
+        - var stock = firstOrDefault(1);
+    - Eliminar el archivo usando Remove.
+        - _context.Stock.Remove(stock);
+    - NOTA: Entity Framework también lleva registro hasta el momento.
+    - Se guardan los cambios con saveChanges.
+
+### StockController.cs
+``` C#
+        // Controlador para DELETE
+        [HttpDelete]
+        [Route("{id}")]
+        public IActionResult Delete([FromRoute] int id)
+        {
+            var stockModel = _context.Stock.FirstOrDefault(x => x.Id == id);
+            if(stockModel == null)
+            {
+                return NotFound();
+            } 
+
+            _context.Stock.Remove(stockModel);
+            _context.SaveChanges();
+
+            return NoContent();
+        }
+```
