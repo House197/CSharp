@@ -609,5 +609,408 @@ namespace api2.Controllers
 }
 ```
 
+## Repository Pattern + Dependency Injection
+- Se evita tener llamadas a la base de datos en los controladores.
+    - Código como FirstOrDefault, el cual se ocupa en el controlador de GET, se reemplaza por FindStock.
+        - FindStock es una función que contiene FirstOrDefault. Este función se encuentra en REPOSITORY.
+
+<img src='ASP\FinShark\ImagenesC\Repository.png'></img>
+
+- Repository Patterns y Dependency Injection ayudan a code to an abstraction.
+    - FindStock es un abstracción. Se está escondiendo todo el código dentro de otro método
+    - La idea principal es poder modificar ese código y afectar a otros.
+- El 99% de la inyección de dependencia es constructor based.
+    - En este caso, el objeto va a ser:
+
+``` C#
+constructor(DBContext context){´
+    context=_context;
+}
+```
+
+- La razón por la que se necesita Dependency Injection es porque se necesita preheat the metaphorical code oven. Se necesita tener objetos, se debe tener things lined up para que cuando se usen estos nuevos métodos, estas nuevas abstracciones que se van a crear, se tienen objetos a la mano. En este caso, el objeto que se tiene a la mano es the application DB context.
+    - Se necesita a la base de datos antes de que se pueda hacer algo más.
+    - En el constructor se va a pasar la base de datos así como se hizo con los controladores, solo que ahora va a ser en otra clase. 
+
+### Interfaces
+- Las interfaces permiten plug in el código en otros lugares y permitir abstraer el código.
+- Se les conoce como Contracts.
+- El archivo IStockRepository.cs es:
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using api2.Models;
+using api2.Dtos.Stock;
+
+namespace api2.Interfaces
+{
+    public interface IStockRepository
+    {
+        Task<List<Stock>> GetAllAsync();
+        // Se coloca ? ya que se usa FirstOrDefault, el cual puede ser null
+        Task<Stock?> GetByIdAsync(int id);
+        Task<Stock> CreateAsync(Stock stockModel);
+        Task<Stock?> UpdateAsync(int id, UpdateStockRequestDto stockDto);
+        Task<Stock?> DeleteAsync(int id);
+    }
+}
+```
+
+- Es una interfaz que define los métodos que se deben implementar para las llamadas de la base de datos.
+    - La interfazse implementa en StockRepository, en donde cada método debe implementarse.
+
+### Repository
+- El propósito de la interface es ingresar IStockRepository e implementar la interface en StockRepository.
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using api2.Interfaces;
+using api2.Models;
+using Microsoft.EntityFrameworkCore;
+using api2.Data;
+
+// Con CTRL + . sobre el nombre de IStockRepository debería mostrar una lista para poder implementar la interface.
+namespace api2.Repository
+{
+    public class StockRepository : IStockRepository
+    {
+
+        // Dependency Injection. Constructor.
+        private readonly ApplicationDBContext _context;
+        public StockRepository(ApplicationDBContext context)
+        {
+            _context = context;
+        }
+
+       public Task<List<Stock>> GetAllAsync() 
+       {
+            return _context.Stock.ToListAsync();
+       }
+    }
+}
+```
+
+- Para poder usar las interfaces y el repositorio se debe agregar en Program.cs lo siguiente antes del build de la app.
+
+``` C#
+using api2.Interfaces;
+using api2.Repository;
+
+...
+
+builder.Services.AddScoped<IStockRepository, StockRepository>();
+
+var app = builder.Build();
+```
+
+### Refactor to repository pattern
+- Consiste en tomar el código de la base de datos y colocarlo en funciones ubicadas en el repository.
+    - El repository está para alojar el código para las llamadas a la base de datos.
+
+<img src='ASP\FinShark\ImagenesC\Repository2.png'></img>
+
+- StockController luce así hasta el momento:
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using api2.Data;
+using api2.Models;
+using api2.Mappers;
+using api2.Dtos.Stock;
+using Microsoft.EntityFrameworkCore;
+using api2.Interfaces;
+
+namespace api2.Controllers
+{
+    [Route("api/stock")]
+    [ApiController]
+    public class StockController : ControllerBase
+    {
+        // ctor para colocar constructor
+        // En el parámetro se coloca la DB por medio de DBContext
+        private readonly ApplicationDBContext _context;
+        private readonly IStockRepository _stockRepo;
+        public StockController(ApplicationDBContext context, IStockRepository stockRepo)
+        {
+            _stockRepo = stockRepo;
+            _context = context;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var stocks = await _stockRepo.GetAllAsync();
+            
+            var stockDto = stocks.Select(stock1 => stock1.ToStockDto());
+            // Stock se definió en Data, en ApplicationDBContext
+
+            return Ok(stockDto);
+        }
+
+        // Por medio de model binding .NET va a extraer el stirng {id}, lo convierte a int y lo pasa al código
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById([FromRoute] int id)
+        {
+            var stock = await _context.Stock.FindAsync(id);
+
+            if(stock == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(stock.ToStockDto());
+        }
+
+        // Controlador para POST
+        [HttpPost]
+        // FromBody es lo mismo que req.body
+        public async Task<IActionResult> Create([FromBody] CreateStockRequestDto stockDto)
+        {
+            var stockModel = stockDto.ToStockFromCreateDTO();
+            await _context.Stock.AddAsync(stockModel);
+            await _context.SaveChangesAsync();
+            return CreatedAtAction(nameof(GetById), new { id = stockModel.Id }, stockModel.ToStockDto());
+        }
+
+        // Controlador para UPDATE
+        [HttpPut]
+        [Route("{id}")]
+        // FromRoute es equivalente a req.params
+        public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateStockRequestDto updateDto)
+        {
+            // Se busca el valor deseado.
+            var stockModel = await _context.Stock.FirstOrDefaultAsync(x => x.Id == id);
+            if(stockModel == null){
+                return NotFound();
+            }
+            // Se actualizan todos los campos por medio del body
+            stockModel.String = updateDto.String;
+            stockModel.CompanyName = updateDto.CompanyName;
+            stockModel.Purchase = updateDto.Purchase;
+            stockModel.LastDiv = updateDto.LastDiv;
+            stockModel.Industry = updateDto.Industry;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(stockModel.ToStockDto());
+        }
+
+        // Controlador para DELETE
+        [HttpDelete]
+        [Route("{id}")]
+        public async Task<IActionResult> Delete([FromRoute] int id)
+        {
+            var stockModel = await _context.Stock.FirstOrDefaultAsync(x => x.Id == id);
+            if(stockModel == null)
+            {
+                return NotFound();
+            } 
+
+            _context.Stock.Remove(stockModel); // No es una operación asíncrona.
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+    }
+}
+```
+
+- Al reemplazar todo por repository se tiene lo siguiente:
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using api2.Data;
+using api2.Models;
+using api2.Mappers;
+using api2.Dtos.Stock;
+using Microsoft.EntityFrameworkCore;
+using api2.Interfaces;
+
+namespace api2.Controllers
+{
+    [Route("api/stock")]
+    [ApiController]
+    public class StockController : ControllerBase
+    {
+        // ctor para colocar constructor
+        // En el parámetro se coloca la DB por medio de DBContext
+        private readonly ApplicationDBContext _context;
+        private readonly IStockRepository _stockRepo;
+        public StockController(ApplicationDBContext context, IStockRepository stockRepo)
+        {
+            _stockRepo = stockRepo;
+            _context = context;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var stocks = await _stockRepo.GetAllAsync();
+            
+            var stockDto = stocks.Select(stock1 => stock1.ToStockDto());
+            // Stock se definió en Data, en ApplicationDBContext
+
+            return Ok(stockDto);
+        }
+
+        // Por medio de model binding .NET va a extraer el stirng {id}, lo convierte a int y lo pasa al código
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById([FromRoute] int id)
+        {
+            var stock = await _stockRepo.GetByIdAsync(id);
+
+            if(stock == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(stock.ToStockDto());
+        }
+
+        // Controlador para POST
+        [HttpPost]
+        // FromBody es lo mismo que req.body
+        public async Task<IActionResult> Create([FromBody] CreateStockRequestDto stockDto)
+        {
+            var stockModel = stockDto.ToStockFromCreateDTO();
+            await _stockRepo.CreateAsync(stockModel);
+            return CreatedAtAction(nameof(GetById), new { id = stockModel.Id }, stockModel.ToStockDto());
+        }
+
+        // Controlador para UPDATE
+        [HttpPut]
+        [Route("{id}")]
+        // FromRoute es equivalente a req.params
+        public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateStockRequestDto updateDto)
+        {
+            // Se busca el valor deseado.
+            var stockModel = await _stockRepo.UpdateAsync(id, updateDto);
+            if(stockModel == null){
+                return NotFound();
+            }
+            return Ok(stockModel.ToStockDto());
+        }
+
+        // Controlador para DELETE
+        [HttpDelete]
+        [Route("{id}")]
+        public async Task<IActionResult> Delete([FromRoute] int id)
+        {
+            var stockModel = await _stockRepo.DeleteAsync(id);
+            if(stockModel == null)
+            {
+                return NotFound();
+            } 
+
+            return NoContent();
+        }
+
+    }
+}
+```
+
+- En StockRepository.cs se define la lógica para llamar a la base de datos, y en StockController se usan los métodos de Ok(), NotFount(), ToStockDto() para retornar al cliente el resultado de la operación. Por otro lado, en StockRepository solo que se retorna el resultado RAW de la base de datos o null.
+- StockRepository.css
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using api2.Interfaces;
+using api2.Models;
+using Microsoft.EntityFrameworkCore;
+using api2.Data;
+using api2.Dtos.Stock;
+
+// Con CTRL + . sobre el nombre de IStockRepository debería mostrar una lista para poder implementar la interface.
+namespace api2.Repository
+{
+    public class StockRepository : IStockRepository
+    {
+
+        // Dependency Injection. Constructor.
+        private readonly ApplicationDBContext _context;
+        public StockRepository(ApplicationDBContext context)
+        {
+            _context = context;
+        }
+
+       public async Task<List<Stock>> GetAllAsync() 
+       {
+            return await _context.Stock.ToListAsync();
+       }
+
+       public async Task<Stock> CreateAsync(Stock stockModel)
+       {
+            await _context.Stock.AddAsync(stockModel);
+            await _context.SaveChangesAsync();
+            return stockModel;
+       }
+
+        public async Task<Stock?> DeleteAsync(int id)
+       {
+            var stockModel = await _context.Stock.FirstOrDefaultAsync(x => x.Id == id);
+            if(stockModel == null)
+            {
+                return null;
+            }
+
+            _context.Stock.Remove(stockModel);
+            await _context.SaveChangesAsync();
+
+            return stockModel;
+       }
+
+       public async Task<Stock?> GetByIdAsync(int id)
+       {
+            return await _context.Stock.FindAsync(id);
+       }
+
+       public async Task<Stock?> UpdateAsync(int id, UpdateStockRequestDto stockDto)
+       {
+            var stockModel = await _context.Stock.FirstOrDefaultAsync(x => x.Id == id);
+            if(stockModel == null) 
+            {
+                return null;
+            }
+
+            stockModel.String = stockDto.String;
+            stockModel.CompanyName = stockDto.CompanyName;
+            stockModel.Purchase = stockDto.Purchase;
+            stockModel.LastDiv = stockDto.LastDiv;
+            stockModel.Industry = stockDto.Industry;
+
+            await _context.SaveChangesAsync();
+
+            return stockModel;
+
+       }
+    }
+
+}
+```
+
 # Web APIs Beginner's Series
 https://learn.microsoft.com/en-us/shows/beginners-series-to-web-apis/
+
+## Creación de Proyecto en Visual Studio
+- Se selecciona la opción: Create a new Project.
+- Se 
+
+<img src=''></img>
