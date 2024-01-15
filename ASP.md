@@ -17,9 +17,69 @@ https://learn.microsoft.com/en-us/aspnet/core/tutorials/first-web-api?view=aspne
 https://dotnet.microsoft.com/es-es/download
 
 # Teoría
+## Entity Framework Core
+https://learn.microsoft.com/es-es/ef/core/
+- Se instala por medio de la galería Nuget
+- Entity Framework (EF) Core es una versión ligera, extensible, de código abierto y multiplataforma de la popular tecnología de acceso a datos Entity Framework.
+<div style='background: #a8ff78;  /* fallback for old browsers */
+background: -webkit-linear-gradient(to right, #78ffd6, #a8ff78);  /* Chrome 10-25, Safari 5.1-6 */
+background: linear-gradient(to right, #78ffd6, #a8ff78); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+color: black; border-radius:10px; font-weight:bold; padding:10px;
+'>
+EF Core puede actuar como asignador relacional de objetos que se encarga de lo siguiente:
+<ul>
+    <li>Permite a los desarrolladores de .NET trabajar con una base de datos usando objetos .NET.</li>
+    <li>Permite prescindir de la mayor parte del código de acceso a datos que normalmente es necesario escribir.</li>
+</ul>
+</div>
+
+- Con EF Core el acceso a dato se realiza mediante un modelo.
+    - Un modelo se compone de clases de entidad y un objeto de contexto que representa una sesión con la base de datos. Este bjeto de contexto permite consultar y guardar datos.
+
+``` C#
+using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
+
+namespace Intro;
+
+public class BloggingContext : DbContext
+{
+    public DbSet<Blog> Blogs { get; set; }
+    public DbSet<Post> Posts { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseSqlServer(
+            @"Server=(localdb)\mssqllocaldb;Database=Blogging;Trusted_Connection=True");
+    }
+}
+
+public class Blog
+{
+    public int BlogId { get; set; }
+    public string Url { get; set; }
+    public int Rating { get; set; }
+    public List<Post> Posts { get; set; }
+}
+
+public class Post
+{
+    public int PostId { get; set; }
+    public string Title { get; set; }
+    public string Content { get; set; }
+
+    public int BlogId { get; set; }
+    public Blog Blog { get; set; }
+}
+```
+
 ## Models
 - Los modelos permiten crear los blueprints para los objetos a guardar en la base de datos.
 - Pueden verse como un cajón en la filing cabinet.
+- EF Core usa un modelo de metadatos para descríbir cómo se asignan los tipos de entidad de la aplicación a la base de datos subyacente.
+- El modelo se crea con un conjunto de convenciones:
+    - Heurística que busca patrones comunes.
+- Después, el modelo se puede personalizar poer medio de atributos de asignación (también conocidos como anotaciones de datos) o llamadas a los métodos ModelBuilder (API fluida) en OnModelCreatin; ambos reemplazarán la configuración que realizan las conveciones.
 
 ## Relación One-To-Many
 ## ORM
