@@ -1066,6 +1066,24 @@ namespace api2.Repository
 }
 ```
 
+## Comment System
+- Los pasos enlistados a continuación no pueden completarse hasta hacer el siguiente, por lo que se recomienda primero crear los DTO para comment.
+### Interface
+- Se crea el archivo ICommentRepository.cs
+- Se hereda ControllerBase a la clase antes de colocar las Routes
+
+### Repository
+
+### Dependency Injection en Program.cs
+``` C#
+builder.Services.AddScoped<ICommentRepository, CommentRepository>();
+```
+
+### Controller
+
+### CommentDto
+
+### CommentMappers.cs
 # Web APIs Beginner's Series
 https://learn.microsoft.com/en-us/shows/beginners-series-to-web-apis/
 
