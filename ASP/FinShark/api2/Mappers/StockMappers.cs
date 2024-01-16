@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using api2.Dtos.Stock;
+using api2.Dtos.Comment;
 using api2.Models;
 
 namespace api2.Mappers
@@ -19,7 +20,8 @@ namespace api2.Mappers
                 Purchase = stockModel.Purchase,
                 String = stockModel.String,
                 LastDiv = stockModel.LastDiv,
-                Industry = stockModel.Industry
+                Industry = stockModel.Industry,
+                Comments = stockModel.Comments.Select(c => c.ToCommentDto()).ToList()
             };
         }
 

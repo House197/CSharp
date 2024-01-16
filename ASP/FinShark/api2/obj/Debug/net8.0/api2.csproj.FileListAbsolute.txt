@@ -298,3 +298,5 @@ C:\Users\Usuario\Documents\Github Desktop\CSharp\ASP\FinShark\api2\obj\Debug\net
 C:\Users\Usuario\Documents\Github Desktop\CSharp\ASP\FinShark\api2\obj\Debug\net8.0\api2.pdb
 C:\Users\Usuario\Documents\Github Desktop\CSharp\ASP\FinShark\api2\obj\Debug\net8.0\api2.genruntimeconfig.cache
 C:\Users\Usuario\Documents\Github Desktop\CSharp\ASP\FinShark\api2\obj\Debug\net8.0\ref\api2.dll
+C:\Users\ECON\Documents\GitHub\CSharp\ASP\FinShark\api2\bin\Debug\net8.0\Microsoft.AspNetCore.JsonPatch.dll
+C:\Users\ECON\Documents\GitHub\CSharp\ASP\FinShark\api2\bin\Debug\net8.0\Microsoft.AspNetCore.Mvc.NewtonsoftJson.dll

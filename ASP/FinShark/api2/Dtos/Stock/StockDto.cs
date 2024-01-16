@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using api2.Dtos.Comment;
 
 namespace api2.Dtos.Stock
 {
@@ -15,5 +16,6 @@ namespace api2.Dtos.Stock
         public decimal LastDiv { get; set; }
         public string Industry { get; set; } = string.Empty;
         // No se retornan los Comments
+        public List<CommentDto> Comments { get; set; }
     }
 }

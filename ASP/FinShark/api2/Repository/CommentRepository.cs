@@ -32,18 +32,18 @@ namespace api2.Repository
             return commentModel;
        }
 
-        public async Task<Stock?> DeleteAsync(int id)
+        public async Task<Comment?> DeleteAsync(int id)
        {
-            var stockModel = await _context.Stock.FirstOrDefaultAsync(x => x.Id == id);
-            if(stockModel == null)
+            var commentModel = await _context.Comments.FirstOrDefaultAsync(x => x.Id == id);
+            if(commentModel == null)
             {
                 return null;
             }
 
-            _context.Stock.Remove(stockModel);
+            _context.Comments.Remove(commentModel);
             await _context.SaveChangesAsync();
 
-            return stockModel;
+            return commentModel;
        }
 
        public async Task<Comment?> GetByIdAsync(int id)

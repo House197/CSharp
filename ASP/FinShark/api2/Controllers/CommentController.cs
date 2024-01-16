@@ -19,9 +19,11 @@ namespace api2.Controllers
     {
         // Se crea variable privada para el repositorio de comment
         private readonly ICommentRepository _commentRepo;
-        public CommentController(ICommentRepository commentRepo)
+        private readonly IStockRepository _stockRepo;
+        public CommentController(ICommentRepository commentRepo, IStockRepository stockRepo) // IStockRepository se agrega para poder usar el método que busca si el Stock existe para poder ligarlo con Comment con un Create.
         {
             _commentRepo = commentRepo;
+            _stockRepo = stockRepo;
         }
 
         [HttpGet]
@@ -45,10 +47,13 @@ namespace api2.Controllers
             return Ok(Comment.ToCommentDto());
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateCommentRequestDto commentDto)
+        [HttpPost("{stockId}")]
+        public async Task<IActionResult> Create([FromBody] CreateCommentRequestDto commentDto, [FromRoute] int stockId)
         {
-            var commentModel = commentDto.ToCommentFromCreateDto();
+            if(!await _stockRepo.StockExists(stockId)){
+                return BadRequest("Stock does not exist");
+            }
+            var commentModel = commentDto.ToCommentFromCreateDto(stockId);
             await _commentRepo.CreateAsync(commentModel);
             return CreatedAtAction(nameof(GetById), new { id = commentModel.Id }, commentModel.ToCommentDto());
         }
@@ -63,6 +68,18 @@ namespace api2.Controllers
                 return NotFound();
             }
             return Ok(commentModel.ToCommentDto());
+        }
+
+        [HttpDelete]
+        [Route("{id}")]
+        public async Task<IActionResult> Delete([FromRoute] int id)
+        {
+            var commentModel = _commentRepo.DeleteAsync(id);
+            if(commentModel == null)
+            {
+                return NotFound();
+            }
+            return NoContent();
         }
     }
 }

@@ -90,8 +90,22 @@ public class Post
     - Microsoft.EntityFrameworkCore.Tools
     - Microsoft.EntityFrameworkCore.Design
     - Microsoft.AspNet.Mvc
+    - Microsoft.AspNetCore.Mvc.NewtonsoftJson (se necesita para asociarl modelos por medio de foreign key)
+
+<img src='ASP\FinShark\ImagenesC\Newton.png'></img>
 - Se abre Nuget Gallery con Ctrl + Shift + p para poder instalar lo necesario.
 - En el archivo de api2.csproj vienen las especificaciones del proyecto, en donde al momento de instalar los paquetes se debe seleccionar la casilla con el nombre de ese archivo, ya que corresponde con el del proyecto que se trabaja.
+
+### Newton
+- En Program.cs se debe colocar lo siguiente:
+``` C#
+builder.Services.AddControllers().AddNewtonsoftJson(options =>
+{
+    options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+});
+```
+
+- Esta librería previene los Objects Cycles
 
 ## Extensiones
 - Se recomienda instalar las siguentes extensiones en Visual Studio Code.
@@ -1080,10 +1094,177 @@ builder.Services.AddScoped<ICommentRepository, CommentRepository>();
 ```
 
 ### Controller
+#### HttpPost
+- Se crea la relación de comentario y stock por medio de la Foreign Key en Comment (StockId).
+- El Id del Stock se va a obtener de la Route.
+- Se verifiva que el ID exista creando un nuevo método en Stock
+#### IStockRepository
+- Se implementa en la interfaz StockExists
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using api2.Models;
+using api2.Dtos.Stock;
+
+namespace api2.Interfaces
+{
+    public interface IStockRepository
+    {
+        Task<List<Stock>> GetAllAsync();
+        // Se coloca ? ya que se usa FirstOrDefault, el cual puede ser null
+        Task<Stock?> GetByIdAsync(int id);
+        Task<Stock> CreateAsync(Stock stockModel);
+        Task<Stock?> UpdateAsync(int id, UpdateStockRequestDto stockDto);
+        Task<Stock?> DeleteAsync(int id);
+        Task<bool> StockExists(int id);
+    }
+}
+```
+
+#### StockRepository
+- Se implementa el método, en donde se usa AnyAsync
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using api2.Interfaces;
+using api2.Models;
+using Microsoft.EntityFrameworkCore;
+using api2.Data;
+using api2.Dtos.Stock;
+
+// Con CTRL + . sobre el nombre de IStockRepository debería mostrar una lista para poder implementar la interface.
+namespace api2.Repository
+{
+    public class StockRepository : IStockRepository
+    {
+
+        // Dependency Injection. Constructor.
+        private readonly ApplicationDBContext _context;
+        public StockRepository(ApplicationDBContext context)
+        {
+            _context = context;
+        }
+
+       public async Task<List<Stock>> GetAllAsync() 
+       {
+            return await _context.Stock.ToListAsync();
+       }
+
+       public async Task<Stock> CreateAsync(Stock stockModel)
+       {
+            await _context.Stock.AddAsync(stockModel);
+            await _context.SaveChangesAsync();
+            return stockModel;
+       }
+
+        public async Task<Stock?> DeleteAsync(int id)
+       {
+            var stockModel = await _context.Stock.FirstOrDefaultAsync(x => x.Id == id);
+            if(stockModel == null)
+            {
+                return null;
+            }
+
+            _context.Stock.Remove(stockModel);
+            await _context.SaveChangesAsync();
+
+            return stockModel;
+       }
+
+       public async Task<Stock?> GetByIdAsync(int id)
+       {
+            return await _context.Stock.FindAsync(id);
+       }
+
+       public async Task<Stock?> UpdateAsync(int id, UpdateStockRequestDto stockDto)
+       {
+            var stockModel = await _context.Stock.FirstOrDefaultAsync(x => x.Id == id);
+            if(stockModel == null) 
+            {
+                return null;
+            }
+
+            stockModel.String = stockDto.String;
+            stockModel.CompanyName = stockDto.CompanyName;
+            stockModel.Purchase = stockDto.Purchase;
+            stockModel.LastDiv = stockDto.LastDiv;
+            stockModel.Industry = stockDto.Industry;
+
+            await _context.SaveChangesAsync();
+
+            return stockModel;
+
+       }
+
+       public async Task<bool> StockExists(int id)
+       {
+          return await _context.Stock.AnyAsync(stock => stock.Id == id)
+       }
+    }
+
+}
+```
 
 ### CommentDto
 
 ### CommentMappers.cs
+
+### Referencias Comments en 
+https://www.youtube.com/watch?v=J1VuY2owXo4&list=PL82C6-O4XrHfrGOCPmKmwTO7M0avXyQKc&index=13
+- Se debe agregar Comments en el StockDto
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using api2.Dtos.Comment;
+
+namespace api2.Dtos.Stock
+{
+    public class StockDto
+    {
+        public int Id { get; set; }
+        // Acá no era String, era Symbol
+        public string String { get; set; } = string.Empty; // Para evitar null reference errors
+        public string CompanyName { get; set; } = string.Empty;
+        public decimal Purchase { get; set; }
+        public decimal LastDiv { get; set; }
+        public string Industry { get; set; } = string.Empty;
+        // No se retornan los Comments
+        public List<CommentDto> Comments { get; set; }
+    }
+}
+```
+
+- Se debe agregar COMMENT en el ToStockDTO en DTO
+``` C#
+        public static StockDto ToStockDto(this Stock stockModel)
+        {   // Los campos corresponden con el nombre colocado en el modelo, por eso empiezan con mayúscula pero en la db empiezan con minúscula.
+            return new StockDto
+            {
+                Id = stockModel.Id,
+                CompanyName = stockModel.CompanyName,
+                Purchase = stockModel.Purchase,
+                String = stockModel.String,
+                LastDiv = stockModel.LastDiv,
+                Industry = stockModel.Industry,
+                Comments = stockModel.Comments.Select(c => c.ToCommentDto()).ToList()
+            };
+        }
+```
+
+- En StockRepository se debe usar include para buscar los comentarios.
+
+``` C#
+       {
+            return await _context.Stock.Include(c => c.Comments).ToListAsync();
+       }
+```
 # Web APIs Beginner's Series
 https://learn.microsoft.com/en-us/shows/beginners-series-to-web-apis/
 

@@ -24,12 +24,12 @@ namespace api2.Mappers
 
         // Método de extensión que retorna Comment. En el argumento el tipo de dato que se usa es CreateCommentRequestDto, y el parámetro tiene el nombre de commentDto.
         // El método retorna un Comment (definido en Model), pero solo se asignan los campos necesarios para la creación.
-        public static Comment ToCommentFromCreateDto(this CreateCommentRequestDto commentDto)
+        public static Comment ToCommentFromCreateDto(this CreateCommentRequestDto commentDto, int stockId)
         {
             return new Comment {
                 Title = commentDto.Title,
                 Content = commentDto.Content,
-                StockId = commentDto.StockId,
+                StockId = stockId,
             };
         }
     }

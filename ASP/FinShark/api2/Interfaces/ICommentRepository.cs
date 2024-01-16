@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using api2.Models;
 using api2.Dtos.Comment;
-using api2.Dtos.Stock;
 
 namespace api2.Interfaces
 {
@@ -15,6 +14,6 @@ namespace api2.Interfaces
         Task<Comment?> GetByIdAsync(int id);
         Task<Comment> CreateAsync(Comment commentModel);
         Task<Comment?> UpdateAsync(int id, UpdateCommentRequestDto commentDto);
-        Task<Stock?> DeleteAsync(int id);
+        Task<Comment?> DeleteAsync(int id);
     }
 }
