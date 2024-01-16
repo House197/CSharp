@@ -7,6 +7,7 @@ using api2.Data;
 using api2.Models;
 using api2.Mappers;
 using api2.Dtos.Stock;
+using api2.Dtos.Comment;
 using Microsoft.EntityFrameworkCore;
 using api2.Interfaces;
 
@@ -29,6 +30,39 @@ namespace api2.Controllers
             var comments = await _commentRepo.GetAllAsync();
             var commentsDto = comments.Select(comment => comment.ToCommentDto());
             return Ok(commentsDto);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById([FromRoute] int id)
+        {
+            var Comment = await _commentRepo.GetByIdAsync(id); 
+
+            if(Comment == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(Comment.ToCommentDto());
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] CreateCommentRequestDto commentDto)
+        {
+            var commentModel = commentDto.ToCommentFromCreateDto();
+            await _commentRepo.CreateAsync(commentModel);
+            return CreatedAtAction(nameof(GetById), new { id = commentModel.Id }, commentModel.ToCommentDto());
+        }
+
+        [HttpPut]
+        [Route("{id}")]
+        public async Task<IActionResult> Update([FromBody] UpdateCommentRequestDto updateDto,[FromRoute] int id)
+        {
+            // Se busca el valor deseado.
+            var commentModel = await _commentRepo.UpdateAsync(id, updateDto);
+            if(commentModel == null){
+                return NotFound();
+            }
+            return Ok(commentModel.ToCommentDto());
         }
     }
 }

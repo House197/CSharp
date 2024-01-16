@@ -25,11 +25,11 @@ namespace api2.Repository
             return await _context.Comments.ToListAsync();
        }
 
-       public async Task<Stock> CreateAsync(Stock stockModel)
+       public async Task<Comment> CreateAsync(Comment commentModel)
        {
-            await _context.Stock.AddAsync(stockModel);
+            await _context.Comments.AddAsync(commentModel);
             await _context.SaveChangesAsync();
-            return stockModel;
+            return commentModel;
        }
 
         public async Task<Stock?> DeleteAsync(int id)
@@ -46,28 +46,25 @@ namespace api2.Repository
             return stockModel;
        }
 
-       public async Task<Stock?> GetByIdAsync(int id)
+       public async Task<Comment?> GetByIdAsync(int id)
        {
-            return await _context.Stock.FindAsync(id);
+            return await _context.Comments.FindAsync(id);
        }
 
-       public async Task<Stock?> UpdateAsync(int id, UpdateStockRequestDto stockDto)
+       public async Task<Comment?> UpdateAsync(int id, UpdateCommentRequestDto commentDto)
        {
-            var stockModel = await _context.Stock.FirstOrDefaultAsync(x => x.Id == id);
-            if(stockModel == null) 
+            var commentModel = await _context.Comments.FirstOrDefaultAsync(x => x.Id == id);
+            if(commentModel == null) 
             {
                 return null;
             }
 
-            stockModel.String = stockDto.String;
-            stockModel.CompanyName = stockDto.CompanyName;
-            stockModel.Purchase = stockDto.Purchase;
-            stockModel.LastDiv = stockDto.LastDiv;
-            stockModel.Industry = stockDto.Industry;
+            commentModel.Title = commentDto.Title;
+            commentModel.Content = commentDto.Content;
 
             await _context.SaveChangesAsync();
 
-            return stockModel;
+            return commentModel;
 
        }
     }

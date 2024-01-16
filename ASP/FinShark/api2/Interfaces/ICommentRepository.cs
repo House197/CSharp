@@ -12,9 +12,9 @@ namespace api2.Interfaces
     {
         Task<List<Comment>> GetAllAsync();
         // Se coloca ? ya que se usa FirstOrDefault, el cual puede ser null
-        Task<Stock?> GetByIdAsync(int id);
-        Task<Stock> CreateAsync(Stock stockModel);
-        Task<Stock?> UpdateAsync(int id, UpdateStockRequestDto commentDto);
+        Task<Comment?> GetByIdAsync(int id);
+        Task<Comment> CreateAsync(Comment commentModel);
+        Task<Comment?> UpdateAsync(int id, UpdateCommentRequestDto commentDto);
         Task<Stock?> DeleteAsync(int id);
     }
 }
