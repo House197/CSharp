@@ -74,12 +74,13 @@ namespace api2.Controllers
         [Route("{id}")]
         public async Task<IActionResult> Delete([FromRoute] int id)
         {
-            var commentModel = _commentRepo.DeleteAsync(id);
+            var commentModel = await _commentRepo.DeleteAsync(id);
             if(commentModel == null)
             {
-                return NotFound();
+                return NotFound("Comment does not exist");
             }
-            return NoContent();
+            //return NoContent();
+            return Ok(commentModel);
         }
     }
 }

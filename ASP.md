@@ -91,6 +91,7 @@ public class Post
     - Microsoft.EntityFrameworkCore.Design
     - Microsoft.AspNet.Mvc
     - Microsoft.AspNetCore.Mvc.NewtonsoftJson (se necesita para asociarl modelos por medio de foreign key)
+        - El anterior es la extensión de MVC, por lo que también se debe instalar Newtonsoft.Json.
 
 <img src='ASP\FinShark\ImagenesC\Newton.png'></img>
 - Se abre Nuget Gallery con Ctrl + Shift + p para poder instalar lo necesario.
@@ -1210,11 +1211,70 @@ namespace api2.Repository
 ```
 
 ### CommentDto
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace api2.Dtos.Comment
+{
+    public class CommentDto
+    {
+        public int Id {get; set;}
+        public string Title { get; set; } = string.Empty;
+        public string Content { get; set; } = string.Empty;
+        public DateTime CreatedOn { get; set; } = DateTime.Now;
+        public int? StockId { get; set; }
+        // No se desea la propiedad de Navigation, ya que va a inyectar otro objeto dentro de Comment.
+    }
+}
+```
 
 ### CommentMappers.cs
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using api2.Dtos.Comment;
+using api2.Models;
+
+namespace api2.Mappers
+{
+    public static class CommentMappers
+    {
+        public static CommentDto ToCommentDto(this Comment commentModel)
+        {
+            return new CommentDto
+            {
+                Id = commentModel.Id,
+                Title = commentModel.Title,
+                Content = commentModel.Content,
+                CreatedOn = commentModel.CreatedOn,
+                StockId = commentModel.StockId
+            };
+        }
+
+
+        // Método de extensión que retorna Comment. En el argumento el tipo de dato que se usa es CreateCommentRequestDto, y el parámetro tiene el nombre de commentDto.
+        // El método retorna un Comment (definido en Model), pero solo se asignan los campos necesarios para la creación.
+        public static Comment ToCommentFromCreateDto(this CreateCommentRequestDto commentDto, int stockId)
+        {
+            return new Comment {
+                Title = commentDto.Title,
+                Content = commentDto.Content,
+                StockId = stockId,
+            };
+        }
+    }
+}
+```
 
 ### Referencias Comments en 
 https://www.youtube.com/watch?v=J1VuY2owXo4&list=PL82C6-O4XrHfrGOCPmKmwTO7M0avXyQKc&index=13
+- Se debe instalar la dependencia de Newton, la cual ya se explicó en al apartado de instalación de dependencias.
+    - Se igual manera, se debe instalar la exntesión de Newton para MVC.
 - Se debe agregar Comments en el StockDto
 
 ``` C#
@@ -1259,12 +1319,21 @@ namespace api2.Dtos.Stock
 ```
 
 - En StockRepository se debe usar include para buscar los comentarios.
+    - Include no sirve en conjunto con Find, por lo que se debe usar FirstOrDefault.
 
 ``` C#
        {
             return await _context.Stock.Include(c => c.Comments).ToListAsync();
        }
 ```
+
+## Update Comments
+- Es igual que con Stock, ya que las relaciones con Stock y Comment ya se han creado, por lo que solo se debe actualizar Content y Title del Comment.
+- Queda pendiente saber por qué en Comment en el video se pasa el modelo del Commet y se crea un nuevo Mapper, en lugar de hacerlo como con el Stock, en donde se pasó commentDTO.
+https://www.youtube.com/watch?v=wpBTiISt6UE&list=PL82C6-O4XrHfrGOCPmKmwTO7M0avXyQKc&index=19
+
+## Delete Comments
+
 # Web APIs Beginner's Series
 https://learn.microsoft.com/en-us/shows/beginners-series-to-web-apis/
 
