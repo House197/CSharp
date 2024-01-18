@@ -1334,6 +1334,183 @@ https://www.youtube.com/watch?v=wpBTiISt6UE&list=PL82C6-O4XrHfrGOCPmKmwTO7M0avXy
 
 ## Delete Comments
 
+## Data Validation
+### Simple Types
+#### URL constraints or Route constraints
+- Se define el tipo de dato del parámetro usando : seguido del tipo de dato.
+``` C#
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetById([FromRoute] int id)
+        {
+            var Comment = await _commentRepo.GetByIdAsync(id); 
+
+            if(Comment == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(Comment.ToCommentDto());
+        }
+```
+
+#### Validation annotations
+- Se usa Data annotations para definir las validaciones en los DTO.
+- Se sugiere no hacerlo en el modelo para no impactar de forma global.
+- Se usa la librería using System.ComponentModel.DataAnnotations;
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations; // Para definir data validation
+
+namespace api2.Dtos.Comment
+{
+    public class UpdateCommentRequestDto 
+    {
+        [Required]
+        [MinLength(5, ErrorMessage = "Title must have more than 5 characters.")]
+        [MaxLength(280, ErrorMessage = "Content must be less than 280 characters.")]
+        public string Title { get; set; } = string.Empty;
+        [Required]
+        [MinLength(5, ErrorMessage = "Title must have more than 5 characters.")]
+        [MaxLength(280, ErrorMessage = "Content must be less than 280 characters.")]
+        public string Content { get; set; } = string.Empty;
+    }
+}
+```
+
+``` C#
+        [Required]
+        [Range(1, 10000000)]
+        public decimal Purchase { get; set; }
+        [Required]
+        [Range(0.001, 100)]
+        public decimal LastDiv { get; set; }
+```
+
+- Luego, en los controladores se debe agregar ModelState para poder aplicar validaciones.
+    - Model State viene de Controller Base.
+
+``` C#
+        [HttpPut]
+        [Route("{id:int}")]
+        public async Task<IActionResult> Update([FromBody] UpdateCommentRequestDto updateDto,[FromRoute] int id)
+        {
+            if(!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            // Se busca el valor deseado.
+            var commentModel = await _commentRepo.UpdateAsync(id, updateDto);
+            if(commentModel == null){
+                return NotFound();
+            }
+            return Ok(commentModel.ToCommentDto());
+        }
+```
+
+## Filtering
+- WEn el códio generado se utiliza .ToList() para genera y ejecutar el SQL.
+``` C#
+var stocks = _context.Stocks.ToList();
+```
+
+- Por medio de .AsQueryable() se realiza un delay a ToList para poder implementar features de filtrado.
+
+``` C#
+var stocks = _context.Stocks.AsQueryable();
+stocks.Where(s => s.Symbol == symbol);
+stocks.Limit(2);
+stocks.ToList();
+```
+
+- Se crea un objeto para que se pueda insertar el objeto en el argumento del controlador deseado. 
+    - Se aplica Filtering a los Stocks, en donde se va a filtar por nombre de compañia y por Symbol (el cual se colocó con el nombre de 'String' accidentalmente).
+    - El tipo de dato que se ocupa el QueryObject (es el tipo del objeto creado).
+    - Se utiliza además [FromQuery] en el argumento de la función.
+- Se crea la carpeta de Helpers, en donde se va a crear el archivo QueryObject.cs
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace Helpers
+{
+    public class QueryObject
+    {
+        public string? String { get; set; } = null; // Deberia ser Symbol, pero se colocó String como nombre por accidente.
+        public string? CompanyName { get; set; } = null;
+    }
+}
+```
+
+- En el controlador de Stock GetAll se define la query como argumento para poder pasarla a _stockRepo.GetAllAsync. Esto significa que más adelante se debe modificar la interfaz para que ese método acepte ese parámetro.
+
+``` C#
+        public async Task<IActionResult> GetAll([FromQuery] QueryObject query)
+        {
+            if(!ModelState.IsValid)
+                return BadRequest(ModelState);
+    
+            var stocks = await _stockRepo.GetAllAsync(query);
+            
+            var stockDto = stocks.Select(stock1 => stock1.ToStockDto());
+            // Stock se definió en Data, en ApplicationDBContext
+
+            return Ok(stockDto);
+        }
+```
+
+- En la interfaz de IStockRepository se modifica GetAllAsync para que acepte QueryObject.
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using api2.Models;
+using api2.Dtos.Stock;
+using api2.Helpers;
+
+namespace api2.Interfaces
+{
+    public interface IStockRepository
+    {
+        Task<List<Stock>> GetAllAsync(QueryObject query);
+        // Se coloca ? ya que se usa FirstOrDefault, el cual puede ser null
+        Task<Stock?> GetByIdAsync(int id);
+        Task<Stock> CreateAsync(Stock stockModel);
+        Task<Stock?> UpdateAsync(int id, UpdateStockRequestDto stockDto);
+        Task<Stock?> DeleteAsync(int id);
+        Task<bool> StockExists(int id);
+    }
+}
+```
+
+- Luego, se debe ajustar el repositorio de Stock para que tomer QueryObject e implementar el filtrado.
+
+``` C#
+       public async Task<List<Stock>> GetAllAsync(QueryObject query) 
+       {
+            //return await _context.Stock.Include(c => c.Comments).ToListAsync();
+            var stocks = _context.Stock.Include(c => c.Comments).AsQueryable();
+            if(!string.IsNullOrWhiteSpace(query.CompanyName))
+            {
+                stocks = stocks.Where(stock => stock.CompanyName.Contains(query.CompanyName));
+            }
+
+            if(!string.IsNullOrWhiteSpace(query.String))
+            {
+                stocks = stocks.Where(stock => stock.String.Contains(query.String));
+            }
+
+            return await stocks.ToListAsync();
+       }
+
+```
+
 # Web APIs Beginner's Series
 https://learn.microsoft.com/en-us/shows/beginners-series-to-web-apis/
 

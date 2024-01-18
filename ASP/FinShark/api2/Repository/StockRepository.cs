@@ -7,6 +7,7 @@ using api2.Models;
 using Microsoft.EntityFrameworkCore;
 using api2.Data;
 using api2.Dtos.Stock;
+using api2.Helpers;
 
 // Con CTRL + . sobre el nombre de IStockRepository debería mostrar una lista para poder implementar la interface.
 namespace api2.Repository
@@ -21,9 +22,21 @@ namespace api2.Repository
             _context = context;
         }
 
-       public async Task<List<Stock>> GetAllAsync() 
+       public async Task<List<Stock>> GetAllAsync(QueryObject query) 
        {
-            return await _context.Stock.Include(c => c.Comments).ToListAsync();
+            //return await _context.Stock.Include(c => c.Comments).ToListAsync();
+            var stocks = _context.Stock.Include(c => c.Comments).AsQueryable();
+            if(!string.IsNullOrWhiteSpace(query.CompanyName))
+            {
+                stocks = stocks.Where(stock => stock.CompanyName.Contains(query.CompanyName));
+            }
+
+            if(!string.IsNullOrWhiteSpace(query.String))
+            {
+                stocks = stocks.Where(stock => stock.String.Contains(query.String));
+            }
+
+            return await stocks.ToListAsync();
        }
 
        public async Task<Stock> CreateAsync(Stock stockModel)

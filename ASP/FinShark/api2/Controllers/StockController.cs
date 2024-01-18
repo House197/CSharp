@@ -9,6 +9,7 @@ using api2.Mappers;
 using api2.Dtos.Stock;
 using Microsoft.EntityFrameworkCore;
 using api2.Interfaces;
+using api2.Helpers;
 
 namespace api2.Controllers
 {
@@ -27,9 +28,12 @@ namespace api2.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] QueryObject query)
         {
-            var stocks = await _stockRepo.GetAllAsync();
+            if(!ModelState.IsValid)
+                return BadRequest(ModelState);
+    
+            var stocks = await _stockRepo.GetAllAsync(query);
             
             var stockDto = stocks.Select(stock1 => stock1.ToStockDto());
             // Stock se definió en Data, en ApplicationDBContext
@@ -38,9 +42,12 @@ namespace api2.Controllers
         }
 
         // Por medio de model binding .NET va a extraer el stirng {id}, lo convierte a int y lo pasa al código
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById([FromRoute] int id)
         {
+            if(!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             var stock = await _stockRepo.GetByIdAsync(id);
 
             if(stock == null)
@@ -56,6 +63,9 @@ namespace api2.Controllers
         // FromBody es lo mismo que req.body
         public async Task<IActionResult> Create([FromBody] CreateStockRequestDto stockDto)
         {
+            if(!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             var stockModel = stockDto.ToStockFromCreateDTO();
             await _stockRepo.CreateAsync(stockModel);
             return CreatedAtAction(nameof(GetById), new { id = stockModel.Id }, stockModel.ToStockDto());
@@ -63,10 +73,13 @@ namespace api2.Controllers
 
         // Controlador para UPDATE
         [HttpPut]
-        [Route("{id}")]
+        [Route("{id:int}")]
         // FromRoute es equivalente a req.params
         public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateStockRequestDto updateDto)
         {
+            if(!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             // Se busca el valor deseado.
             var stockModel = await _stockRepo.UpdateAsync(id, updateDto);
             if(stockModel == null){
@@ -77,9 +90,12 @@ namespace api2.Controllers
 
         // Controlador para DELETE
         [HttpDelete]
-        [Route("{id}")]
+        [Route("{id:int}")]
         public async Task<IActionResult> Delete([FromRoute] int id)
         {
+            if(!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             var stockModel = await _stockRepo.DeleteAsync(id);
             if(stockModel == null)
             {
