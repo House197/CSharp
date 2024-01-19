@@ -122,6 +122,38 @@ docker network inspect <NombreRed>
 - Docker crea los identificadores mediante nombres o un DNS, lo cual permite identificar la base de datos y los contenedores van a poder comunicarse entre sí usando el mismo nombre.
     - En la parte de Containers dado por el comando inspect se puede ver esto con el apartado de Name dentro del contenedor que corresponde.
 
+### Implementación de red desde inicialización
+``` bash
+docker container run \
+--name world-db \
+--env MARIADB_USER=example-user \
+--env MARIADB_PASSWORD=user-password \
+--env MARIADB_ROOT_PASSWORD=root-secret-password \
+--env MARIADB_DATABASE=world-db \
+--volume world-db:/var/lib/mysql \
+--network world-app \
+mariadb:jammy
+```
+
+``` bash
+docker container run \
+--name phpmyadmin \
+-d \
+-e PMA_ARBBITRARY=1 \
+-p 88080:80 \
+--network world-app \
+phpmyadmin:5.2.0-apache
+```
+
+
+
+# Eliminar todos los contenedores o imágenes
+``` bash
+docker container rm -s $(docker container ls -aq)
+```
+
+- La bandera q permite traer solo el ID del listado.
+
 # Ver Logs de un contenedor
 ``` bash
 docker container logs <container id>
