@@ -1511,6 +1511,122 @@ namespace api2.Interfaces
 
 ```
 
+## Sorting
+- Se requiere el uso de AsQueryble.
+- En la clase de QueryObject se define la propiedad SortBy, la cual puede ser nula.
+- Se define la propiedad IsDescending.
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace api2.Helpers
+{
+    public class QueryObject
+    {
+        public string? String { get; set; } = null; // Deberia ser Symbol, pero se colocó String como nombre por accidente.
+        public string? CompanyName { get; set; } = null;
+        public string? SortBy { get; set; } = null;
+        public bool IsDescending { get; set; }
+    }
+}
+```
+
+- En StockRepository se revise que el parámetro no sea nulo o tenga espacios para poder aplicarlo después de las demás querys hechas.
+
+``` C#
+       public async Task<List<Stock>> GetAllAsync(QueryObject query) 
+       {
+            //return await _context.Stock.Include(c => c.Comments).ToListAsync();
+            var stocks = _context.Stock.Include(c => c.Comments).AsQueryable();
+            if(!string.IsNullOrWhiteSpace(query.CompanyName))
+            {
+                stocks = stocks.Where(stock => stock.CompanyName.Contains(query.CompanyName));
+            }
+
+            if(!string.IsNullOrWhiteSpace(query.String))
+            {
+                stocks = stocks.Where(stock => stock.String.Contains(query.String));
+            }
+
+            if(!string.IsNullOrWhiteSpace(query.SortBy))
+            {
+                // Se compara que sea igual a la columna deseada, en donde acá String debería llamarse Symbol
+                if(query.SortBy.Equals("String", StringComparison.OrdinalIgnoreCase))
+                {
+                    stocks = query.IsDescending ? stocks.OrderByDescending(stock => stock.String) : stocks.OrderBy(stock => stock.String);
+                }
+            }
+
+            return await stocks.ToListAsync();
+       }
+```
+
+## Pagination
+- Permite no retornar todos los resultados de inmediato.
+    - Los separa en diferentes 'páginas'.
+- Se combinan las funciones .Skip() y .Take()
+
+<a src='ASP\FinShark\ImagenesC\Pagination.png'></a>
+
+- Se colocan las propiedades PageNumber y PageSize en QueryObject
+    - PageSize indica la cantidad de elementos a mostrar por página.
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace api2.Helpers
+{
+    public class QueryObject
+    {
+        public string? String { get; set; } = null; // Deberia ser Symbol, pero se colocó String como nombre por accidente.
+        public string? CompanyName { get; set; } = null;
+        public string? SortBy { get; set; } = null;
+        public bool IsDescending { get; set; } = false;
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 20;
+    }
+}
+```
+
+- En StockRepository se agrega la lógica en GetAllAsync.
+
+``` C#
+       public async Task<List<Stock>> GetAllAsync(QueryObject query) 
+       {
+            //return await _context.Stock.Include(c => c.Comments).ToListAsync();
+            var stocks = _context.Stock.Include(c => c.Comments).AsQueryable();
+            if(!string.IsNullOrWhiteSpace(query.CompanyName))
+            {
+                stocks = stocks.Where(stock => stock.CompanyName.Contains(query.CompanyName));
+            }
+
+            if(!string.IsNullOrWhiteSpace(query.String))
+            {
+                stocks = stocks.Where(stock => stock.String.Contains(query.String));
+            }
+
+            if(!string.IsNullOrWhiteSpace(query.SortBy))
+            {
+                // Se compara que sea igual a la columna deseada, en donde acá String debería llamarse Symbol
+                if(query.SortBy.Equals("String", StringComparison.OrdinalIgnoreCase))
+                {
+                    stocks = query.IsDescending ? stocks.OrderByDescending(stock => stock.String) : stocks.OrderBy(stock => stock.String);
+                }
+            }
+
+            var skipNumber = (query.PageNumber - 1) * query.PageSize;
+
+            return await stocks.Skip(skipNumber).Take(query.PageSize).ToListAsync();
+       }
+```
+
+
 # Web APIs Beginner's Series
 https://learn.microsoft.com/en-us/shows/beginners-series-to-web-apis/
 

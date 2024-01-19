@@ -36,7 +36,18 @@ namespace api2.Repository
                 stocks = stocks.Where(stock => stock.String.Contains(query.String));
             }
 
-            return await stocks.ToListAsync();
+            if(!string.IsNullOrWhiteSpace(query.SortBy))
+            {
+                // Se compara que sea igual a la columna deseada, en donde acá String debería llamarse Symbol
+                if(query.SortBy.Equals("String", StringComparison.OrdinalIgnoreCase))
+                {
+                    stocks = query.IsDescending ? stocks.OrderByDescending(stock => stock.String) : stocks.OrderBy(stock => stock.String);
+                }
+            }
+
+            var skipNumber = (query.PageNumber - 1) * query.PageSize;
+
+            return await stocks.Skip(skipNumber).Take(query.PageSize).ToListAsync();
        }
 
        public async Task<Stock> CreateAsync(Stock stockModel)
