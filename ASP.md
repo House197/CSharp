@@ -1519,3 +1519,82 @@ https://learn.microsoft.com/en-us/shows/beginners-series-to-web-apis/
 - Se 
 
 <img src=''></img>
+
+
+
+``` python
+import pylightxl as xl 	
+def ReadXLS(FilePath,colTable,sheetName,DateFormat):
+	try:
+		pathSplited = FilePath.split('/')
+		fileName = pathSplited[len(pathSplited) - 1]
+		readedFile = xl.readxl(fn=str(FilePath))	
+		wsList =  readedFile.ws_names
+		if sheetName in wsList:
+			datosfil=[]
+			table =[]
+			countRows = 0 
+			
+			MyIter = iter(readedFile.ws(ws=sheetName).rows)
+			rowFechas = next(MyIter)
+			Fechas = []
+			for item in rowFechas:
+				if item != '':
+					date = system.date.parse(item, DateFormat)
+					Fechas.append(date)
+			DataDemand = []
+			for row in readedFile.ws(ws=sheetName).rows:
+				countRows += 1
+				if countRows > 2:	
+					partnumber = str(row[1])
+					description = str(row[2])
+					query = 'SELECT * FROM partnumber where partnumber = ?'
+					DataPartnumber = system.db.runPrepQuery(query,[partnumber],"")
+					try:
+						id_partnumber = DataPartnumber.getValueAt(0,"id_partnumber")
+						id_line = DataPartnumber.getValueAt(0,"id_line")
+					except:
+						id_partnumber = 0
+						id_line = 0
+					DemandList = row[3:47]
+					Turnos = []
+					CountTurno = 0
+					IndexFecha = 0
+					DemandPerDay =[DemandList[i:i + 3] for i in range(0, len(DemandList), 3)]
+					for demand in DemandPerDay:
+						demand = [0 if value == '' else int(value) for value in demand]
+						fecha = Fechas[IndexFecha]
+						IndexFecha += 1
+						rowDemand = [id_line, id_partnumber, partnumber, description, fecha] + demand
+						if rowDemand[0] != 0:
+							DataDemand.append(rowDemand)
+			table = system.dataset.toDataSet(colTable, DataDemand)
+			event.source.parent.getComponent('Power Table').data = table
+			
+		else:
+				system.gui.messageBox('Sheet ' +sheetName+ ' not found in Excel Workbook: \n' + str(fileName),'File format error')
+				table = []
+		
+		event.source.parent.getComponent('ProcessRunning').visible= False 
+		
+	except:
+		system.gui.messageBox('This file does not correspond to pull .xlsx file','Canceled')
+		event.source.parent.getComponent('ProcessRunning').visible = False 
+
+
+
+selectedFilePath = system.file.openFile('xlsx')
+sheetName = 'Pull'
+colTable = ['id_line', 'id_partnumber', 'partnumber', 'description', 'Date', 'Turno1', 'Turno2', 'Turno3']
+database = ""
+DateFormat = event.source.parent.getComponent('DateFormat').selectedStringValue
+
+try:
+	if selectedFilePath != None:
+		event.source.parent.getComponent('ProcessRunning').visible = True
+		system.util.invokeAsynchronous(ReadXLS,[selectedFilePath,colTable,sheetName, DateFormat],'File read threat')
+	else:
+		system.gui.messageBox('No file selected','Canceled')
+except:
+	system.gui.messageBox('This file does not correspond to demand .xlsx file','Canceled')
+```
