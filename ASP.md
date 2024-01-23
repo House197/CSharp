@@ -1626,6 +1626,46 @@ namespace api2.Helpers
        }
 ```
 
+# .NET
+https://dotnet.microsoft.com/en-us/learn/videos?WT.mc_id=beginwebapis-c9-cephilli
+https://www.youtube.com/watch?v=uytNCXw9dME&list=PLdo4fOcmZ0oUwBEC2bnwPtHqbU8Vmh_tj&index=3
+- .NET is a free, open-source, & cross-platform development platform.
+    - Cross-platform = Works & runs on Linux, macOS, and Windows.
+    - Development platform = it means it has programming languages and libraries, so when put together it's a free development environment where developers can build applications for their customers.
+- .NET supports C#, F# and more.
+- Tools like Visual Studio and Visual Studio Code can be used.
+- What can be built with .NET?
+    - WEB
+        - Build web apps and services for macOS, Windows, Linux and Docker.
+    - Mobile and Desktop
+        - Use single codebase to build native apps for Windows, macOS, iOS, and Android.
+    - Cloud
+        - Build scalable and resilient cloud native apps that run on all major cloud providers.
+    - Microservices
+        - Create independently deployable microservices that run on Docker containers.
+- Whats the difference between .NET and .NET Framework?
+    - .NET is the modernized version while .NET Framwork is the first rendition of our product.
+<img src='ASP\FinShark\ImagenesC\NETvsNETFramework.png'></img>
+
+- Versions to identify each one:
+<img src='ASP\FinShark\ImagenesC\Versions.png'></img>
+<img src='ASP\FinShark\ImagenesC\Learning.png'></img>
+
+## Instalación de SDK de .NET en Windows
+- Se dirige a la página de Microsoft para descagar el SDK de .NET, en donde la página ofrece la opción de descarga según el sistema operativo que se usa.
+- Se escoge la instalación scripted para Linux, en donde al momento de descargar .dotnet NO se debe agregar --version, simplemente la primera parte del comando. https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
+- Luego, se deben ajustar las variables de entorno según la siguiente página, la cual se da el link al momento de descargar .dotnet. https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#set-environment-variables-system-wide
+- En Visual Studio Code solo se debe instalar la extensión de C# DEV KIT.
+- Al finalizar, se presion CTRL + SHIFT + P para poder seleccionar la opción .NET CREATE NEW.
+    - Esta opción ofrece una lista de posibles proyectos que se pueden crear.
+- Para correr el programa se abre la terminal integrada (Se puede hacer click derecho sobre la carpeta del proyecto y abrirla), y luego correr el comando:
+
+``` bash
+dotnet run
+```
+
+# Vocabulario
+- What i want to call out here is that it is recommended for all new development.
 
 # Web APIs Beginner's Series
 https://learn.microsoft.com/en-us/shows/beginners-series-to-web-apis/
