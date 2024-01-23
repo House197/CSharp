@@ -1687,6 +1687,7 @@ https://www.youtube.com/watch?v=3ST-7TP09qk&list=PLdo4fOcmZ0oULFjxrOagaERVAMbmG2
 # Vocabulario
 - What i want to call out here is that it is recommended for all new development.
 - It is really neat.
+- APIs are a common set of collections to be executed agains a given collection of resources.
 
 # Web APIs Beginner's Series
 https://learn.microsoft.com/en-us/shows/beginners-series-to-web-apis/
@@ -1715,86 +1716,195 @@ https://learn.microsoft.com/en-us/shows/beginners-series-to-web-apis/
 
 ## Creación Web API usando ASP.NET Core
 https://learn.microsoft.com/en-us/shows/beginners-series-to-web-apis/creating-a-web-api-project-3-of-18--beginners-series-to-web-apis
-- Se selecciona la opción: Create a new Project.
-- Se 
+- En el video se usa Visual Studio, pero la práctica se hace en Visual Studio Code.
+- Se presion CTRL + SHIFT + p para abrir las opciones de VS Code.
+    - Se selecciona .NET Create Project.
+    - Se selecciona la opción del Proyecto WEB API.
+- Se debe definir el proyecto en una carpeta que no contenga ya otro proyecto de C# para evitar conflictos.
+- Esta opción solo provee del Program.cs en donde ya se encuentra la API de muestra en conjunto con el record de WeatherForecast, los cuales se eliminarán para poder definir las APIs deseadas.
 
+``` C#
+var builder = WebApplication.CreateBuilder(args);
 
+// Add services to the container.
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
+var app = builder.Build();
 
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
-``` python
-import pylightxl as xl 	
-def ReadXLS(FilePath,colTable,sheetName,DateFormat):
-	try:
-		pathSplited = FilePath.split('/')
-		fileName = pathSplited[len(pathSplited) - 1]
-		readedFile = xl.readxl(fn=str(FilePath))	
-		wsList =  readedFile.ws_names
-		if sheetName in wsList:
-			datosfil=[]
-			table =[]
-			countRows = 0 
-			
-			MyIter = iter(readedFile.ws(ws=sheetName).rows)
-			rowFechas = next(MyIter)
-			Fechas = []
-			for item in rowFechas:
-				if item != '':
-					date = system.date.parse(item, DateFormat)
-					Fechas.append(date)
-			DataDemand = []
-			for row in readedFile.ws(ws=sheetName).rows:
-				countRows += 1
-				if countRows > 2:	
-					partnumber = str(row[1])
-					description = str(row[2])
-					query = 'SELECT * FROM partnumber where partnumber = ?'
-					DataPartnumber = system.db.runPrepQuery(query,[partnumber],"")
-					try:
-						id_partnumber = DataPartnumber.getValueAt(0,"id_partnumber")
-						id_line = DataPartnumber.getValueAt(0,"id_line")
-					except:
-						id_partnumber = 0
-						id_line = 0
-					DemandList = row[3:47]
-					Turnos = []
-					CountTurno = 0
-					IndexFecha = 0
-					DemandPerDay =[DemandList[i:i + 3] for i in range(0, len(DemandList), 3)]
-					for demand in DemandPerDay:
-						demand = [0 if value == '' else int(value) for value in demand]
-						fecha = Fechas[IndexFecha]
-						IndexFecha += 1
-						rowDemand = [id_line, id_partnumber, partnumber, description, fecha] + demand
-						if rowDemand[0] != 0:
-							DataDemand.append(rowDemand)
-			table = system.dataset.toDataSet(colTable, DataDemand)
-			event.source.parent.getComponent('Power Table').data = table
-			
-		else:
-				system.gui.messageBox('Sheet ' +sheetName+ ' not found in Excel Workbook: \n' + str(fileName),'File format error')
-				table = []
-		
-		event.source.parent.getComponent('ProcessRunning').visible= False 
-		
-	except:
-		system.gui.messageBox('This file does not correspond to pull .xlsx file','Canceled')
-		event.source.parent.getComponent('ProcessRunning').visible = False 
+app.UseHttpsRedirection();
 
-
-
-selectedFilePath = system.file.openFile('xlsx')
-sheetName = 'Pull'
-colTable = ['id_line', 'id_partnumber', 'partnumber', 'description', 'Date', 'Turno1', 'Turno2', 'Turno3']
-database = ""
-DateFormat = event.source.parent.getComponent('DateFormat').selectedStringValue
-
-try:
-	if selectedFilePath != None:
-		event.source.parent.getComponent('ProcessRunning').visible = True
-		system.util.invokeAsynchronous(ReadXLS,[selectedFilePath,colTable,sheetName, DateFormat],'File read threat')
-	else:
-		system.gui.messageBox('No file selected','Canceled')
-except:
-	system.gui.messageBox('This file does not correspond to demand .xlsx file','Canceled')
+app.Run();
 ```
+
+- En Visual Studio, Program.cs tiene líneas adicionales:
+
+``` C#
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+builder.Services.AddControllers();
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();
+```
+
+### Controllers
+- Se crea la carpeta Controllers en el root del proyecto.
+- El nombre del archivo debe terminar con Controller.cs para que ASP.NET Core lo identifique.
+- En ASP.NET Core un controlador recibe las solicitudes que coinciden con una path en particular.
+    - Se le definine varias operaciones para inspeccionar las solicitudes, procesarlas y retornar información.
+        - A estas operaciones se les denomina Action Methods.
+- En el ejemplo se declara el controlador: RecipesController.cs
+- Un controlador vacío debe lucir de la siguiente forma:
+
+``` C#
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
+namespace API.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+     public class RecipesController : ControllerBase
+    {
+
+    }
+}
+```
+
+- Namespaces 
+    - Microsoft.AspNetCore.Http: Proporciona tipos para trabajar con objetos HTTP, como solicitudes y respuestas.
+    - Microsoft.AspNetCore.Mvc: Contiene clases e interfaces para trabajar con el patrón Modelo-Vista-Controlador (MVC) en ASP.NET Core.
+- Declaración del Namespace y Clase:
+    - namespace API.Controllers: Indica que la clase RecipesController está dentro del espacio de nombres API.Controllers.
+
+``` C#
+namespace API.Controllers
+{
+    //...
+}
+```
+
+- Atributos de Ruta y Controlador
+    - [Route("api/[controller]")]: Define la ruta base para las acciones en este controlador. El [controller] se reemplazará con el nombre del controlador sin el sufijo "Controller". Por ejemplo, si el nombre de la clase es RecipesController, la ruta base será /api/Recipes.
+    - [ApiController]: Indica que esta clase es un controlador de API, lo que proporciona ciertas convenciones y características específicas de API.
+
+``` C#
+[Route("api/[controller]")]
+[ApiController]
+```
+
+- Declaración de la Clase del Controlador
+    - public class RecipesController: Declara la clase del controlador llamada RecipesController.
+    - : ControllerBase: Indica que esta clase hereda de ControllerBase, que es una clase base para controladores en ASP.NET Core.
+
+``` C#
+public class RecipesController : ControllerBase
+{
+    //...
+}
+```
+
+- Para este controlador, se coloca un Action Method usando el verbo GET de HTTP.
+    - Un Action Method se conforma del verbo HTTP, y el método C# para procesar la solicitud y retornar información al cliente.
+
+``` C#
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
+namespace API.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+     public class RecipesController : ControllerBase
+    {
+        [HttpGet]
+        public string[] Dishes()
+        {
+            string[] dishes = {"Pizza", "Dumplings", "Rice"};
+            return dishes;
+        }
+    }
+}
+```
+### CRUD Conventions
+
+<img src="ASP\FinShark\ImagenesC\HTTPMethods.png"></img>
+
+- Siguiendo las conveciones el controlador de Recipes luce así:
+
+``` C#
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using System.Linq;
+
+namespace API.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+     public class RecipesController : ControllerBase
+    {
+        [HttpGet]
+        public ActionResult GetRecipes()
+        {
+            string[] recipes = {"Pizza", "Dumplings", "Rice"};
+
+            if(recipes.Any())
+                return NotFound();
+            return Ok(recipes);
+        }
+
+        [HttpDelete]
+        public ActionResult DeleteRecipes()
+        {
+            bool badThingsHappened = false;
+
+            if (badThingsHappened)
+                return BadRequest();
+            return NoContent();
+        }
+    }
+}
+```
+- GetRecipes()
+    - [HttpGet]: Es un atributo que indica que este método manejará las solicitudes HTTP GET. En otras palabras, este método se invocará cuando se realice una solicitud GET a la ruta /api/recipes.
+    - public ActionResult GetRecipes(): Declara un método público llamado GetRecipes que devuelve un objeto ActionResult. ActionResult es una clase base para varios tipos de resultados de acción.
+    - if(recipes.Any()): Verifica si hay elementos en el array recipes. Any() es un método de extensión que devuelve true si la secuencia tiene al menos un elemento.
+    - return NotFound();: Si no hay elementos en recipes, devuelve un resultado HTTP 404 (NotFound). Esto indica que no se encontraron recursos.
+    - return Ok(recipes);: Si hay elementos en recipes, devuelve un resultado HTTP 200 (Ok) con el array recipes como cuerpo de la respuesta. Esto indica que la solicitud fue exitosa y devuelve los datos solicitados.
+
+- Los métodos retornan el tipo ActionResult.
+- Se response a la solicitud por medio de métodos HTTP.
+    - OK()
+    - NoContent()
+    - BadRequest()
+    - NoFound()
+
+### Routing
+https://learn.microsoft.com/en-us/shows/beginners-series-to-web-apis/understanding-web-api-routes-6-of-18--beginners-series-to-web-apis
