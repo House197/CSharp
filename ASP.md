@@ -1664,17 +1664,61 @@ https://www.youtube.com/watch?v=uytNCXw9dME&list=PLdo4fOcmZ0oUwBEC2bnwPtHqbU8Vmh
 dotnet run
 ```
 
+## Nuget Package
+- It is the .NET package manager.
+- Se puede visitar la página de Nuget y explorar las librerías. https://www.nuget.org/
+- Se pueden descargar librerías por medio del comando que Nuget ofrece para la librería deseada y luego colocarlo en la terminal intergada en el proyecto.
+
+# C# for Beginners
+https://www.youtube.com/watch?v=3ST-7TP09qk&list=PLdo4fOcmZ0oULFjxrOagaERVAMbmG20Xe&index=3
+- What is IDE?
+    - Integrated Development Environment, like Visual Studio or VSC.
+- What is the command dotnet?
+    - That's the commando line tool used to create projects, run apps.
+    - It is the one entrypoint CLI (Command Line Interface)
+- What is the Program.cs file?
+    - It is the main program. It is the entrypoint. It is wqhere the code runs from.
+
+## Basics of VS Code and C# Dev Kit
+- C# Dev Kit aplicará cuando se abre directamente el folder del proyecto en lugar de un folder padre.
+    - Esto habilita Solution Explorer, así como poder crear archivos de C# con una plantilla de clase entre otros.
+- Solution Explorer presenta un vista lógica del proyecto, los main source files, dependencies.
+
 # Vocabulario
 - What i want to call out here is that it is recommended for all new development.
+- It is really neat.
 
 # Web APIs Beginner's Series
 https://learn.microsoft.com/en-us/shows/beginners-series-to-web-apis/
+- ASP.NET makes it easy to build services that reach a broad range of clients, including browsers and mobile devices.
+- With ASP.NET you use the same framework and patterns to build both web pages and services, side-by-side in the same project.
 
-## Creación de Proyecto en Visual Studio
+- ver videos de C#, .NET Core y APS.NET Core. En el video según están en .NET videos
+    - dotnet.microsoft.com/learn/videos
+
+- API representa APPLICATION PROGRAMING INTERFACEm y esencialmente es una colección de operaciones que se pueden invocar de forma remota o local.
+    - WEB APIs son operaciones que se pueden invocar por medio de HTTP para aprovechar las funcionalidades que esas operaciones ofrecen.
+    - Entonces, son un conjunto de operaciones que se desean ejecutar contra una colección de recursos.
+
+## HTTP
+- Significa Hypertext Transfer Protocol.
+- Permite que dos sistemas se comuniquen a pesar de que no estén en el mismo lugar.
+- Es un estandard abieto definido en un documento llamado RFC 2616
+- El protocolo confia en el concepto de clientes y el servidor.
+    - Cliente: app o entidad que genera solicitudes.
+    - Servidor: Recibe las solicitudes, las proces y genera una respuesta HTTP.
+- Los headers son key-value pairs que contienen metada asociada con las solicitudes respectivas.
+- En el Body se tiene información que opcionalmente se puede enviar junto a la solicitud.
+<img src='ASP\FinShark\ImagenesC\HTTPReq.png'></img>
+<img src='ASP\FinShark\ImagenesC\HTTPRES.png'></img>
+![Alt text](image.png)
+
+## Creación Web API usando ASP.NET Core
+https://learn.microsoft.com/en-us/shows/beginners-series-to-web-apis/creating-a-web-api-project-3-of-18--beginners-series-to-web-apis
 - Se selecciona la opción: Create a new Project.
 - Se 
 
-<img src=''></img>
+
 
 
 
