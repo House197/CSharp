@@ -1906,5 +1906,195 @@ namespace API.Controllers
     - BadRequest()
     - NoFound()
 
+### ActionResult
+- Es una clase base para varios tipos de resultados de acción que un controlador puede devolver. ActionResult permite a un controlador devolver diferentes tipos de resultados de acción según el escenario. Puede devolver tipos específicos como OkResult, NotFoundResult, BadRequestResult, o incluso tipos complejos como ObjectResult para devolver datos junto con el código de estado HTTP.
+- ActionResult es versátil y puede adaptarse a diferentes situaciones. Puedes personalizar el resultado según las necesidades de tu aplicación, ya sea devolviendo datos, redirigiendo a otra acción, devolviendo un código de estado específico, o incluso devolviendo un resultado de tipo diferente.
+- Además de los métodos específicos mencionados anteriormente, ActionResult tiene varios tipos derivados que puedes usar directamente, como OkResult, NotFoundResult, BadRequestResult, ObjectResult, entre otros. Cada uno de estos tipos representa un tipo específico de resultado de acción.
+- ActionResult es compatible con la negociación de contenido, lo que significa que ASP.NET Core puede seleccionar automáticamente el formato de respuesta basándose en las preferencias del cliente (por ejemplo, JSON o XML). Esto permite construir APIs que pueden responder en diferentes formatos según las preferencias del consumidor.
+- Viene de ControllerBase.
+- Son útiles también para generar la metadata usada en Swagger UI.
 ### Routing
 https://learn.microsoft.com/en-us/shows/beginners-series-to-web-apis/understanding-web-api-routes-6-of-18--beginners-series-to-web-apis
+- URLs are essentially the address of the API.
+- Using combinations of URLs, HTTP methods, and some other information inside the requests, ASP.NET Core is able to invoke the right action with it inside of the controller and a processor requests (this is called routing.)
+
+<img src='ASP\FinShark\ImagenesC\Routing.png'></img>
+
+- Se usan routing attributes
+    - Se puede ser más granular a nivel del Action Method.
+        - En el atributo HTTP se puede especificar el endpoint.
+
+``` C#
+        [HttpDelete("all")] // api/recipes/all
+        public ActionResult DeleteRecipes()
+        {
+            bool badThingsHappened = false;
+
+            if (badThingsHappened)
+                return BadRequest();
+            return NoContent();
+        }
+```
+
+- Además de especificar el endpoint, también se puede especificar un token para poder usarlo como variable.
+    - Se usan curly brackets.
+    - ASP.NET Core se encarga de hacer coincidir el token con el parámetro del método. En otras palabras, la data pasa hacia el Action Method
+
+``` C#
+        [HttpDelete("{id}")] // api/recipes/12
+        public ActionResult DeleteRecipes(string id)
+        {
+            bool badThingsHappened = false;
+
+            if (badThingsHappened)
+                return BadRequest();
+            return NoContent();
+        }
+```
+
+### Swagger UI
+- Swagger is a collection of open source tools that make it easier for developers to build the consume web APIs
+- Among the tools are:
+    - Client generation.
+    - API documentation.
+    - The ability to debug the APIs lab using the UI.
+- Swagger relies on something known as the open API specification. That spec allows to define some of the detailed things that are APIs are able to do.
+- Se habilita en el proyecto por medio del package Swashbuckle, el cual se puede ver en API.csproj.
+
+``` csproj
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+  </ItemGroup>
+
+</Project>
+
+```
+
+- Por defecto está disponible en la plantilla WEB Api en .NET 5.
+
+### Binding to HTTP request data
+- ASP.NET Core defines a lot of types and properties that we can use to inspect the incoming request.
+    - We can even define the types of the information we want to pull out of the request and have it provided to the action methods as parameters (binding).
+- Se puede definir el tipo de información que se desea obtener (pull out) de la petición y proveerla como parámetros a los action methods.
+- Se puede obtener información de varias partes de la solicitud:
+    - Del cuerpo.
+    - De query.
+    - De Headers.
+    - De Form.
+
+<img src='ASP\FinShark\ImagenesC\Binding.png'></img>
+
+- Se definen por medio de binding attributes.
+- Por ejemplo, se limita la cantidad de recursos que se retorna de la ruta de GET.
+    - Se usa [FromQuery] y Take(), el cual proviene de Linq.
+
+``` C#
+    [HttpGet]
+    public ActionResult GetRecipes([FromQuery] int count)
+    {
+        string[] recipes = {"Pizza", "Dumplings", "Rice"};
+
+        if(!recipes.Any())
+            return NotFound();
+        return Ok(recipes.Take(count));
+    }
+```
+
+### API Data Models
+#### Records
+- Se introdujo en C# 9.
+- Son similares a las clases con la ventaja de que cuentan con beneficios extra.
+    - We get support for thinks like immutability and equality.
+
+<img src='ASP\FinShark\ImagenesC\Record.png'></img>
+
+- Se crea la carpeta de Models y el archivo Records.cs
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace API.Models
+{
+    public record Recipe
+    {
+        public string Title { get; init; }
+        public string Description { get; init; }
+        public IEnumerable<string> Directions { get; init; }
+        public IEnumerable<string> Ingredients { get; init; }
+        public DateTime Updated { get; init; }
+    }
+}
+```
+
+- En el controlador se modifica el Action Method GET.
+    - En este Action Method ahora se usa el Tipo Recipe (el cual es el modelo creado en Records).
+    - Solo se llena la propiedad de Title por simplicidad.
+    - De igual manera, se implementa el método Post para crear una nueva receta usando el tipo Recipe.
+
+``` C#
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using System.Linq;
+using API.Models;
+
+namespace API.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+     public class RecipesController : ControllerBase
+    {
+        [HttpGet]
+        public ActionResult GetRecipes([FromQuery] int count)
+        {
+            Recipe[] recipes = {
+                new() { Title = "Oxtail" },
+                new() { Title = "Curry Chicken" },
+                new() { Title = "Dumplongs" } 
+            };
+
+            return Ok(recipes.Take(count));
+        }
+
+        [HttpPost]
+        public ActionResult CreateNewRecipe([FromBody] Recipe newRecipe)
+        {
+            bool badThingsHappened = false;
+            if (badThingsHappened)
+                return BadRequest();
+            
+            return Created("", newRecipe);
+        }
+
+        [HttpDelete("{id}")] // api/recipes/a23
+        public ActionResult DeleteRecipes()
+        {
+            bool badThingsHappened = false;
+
+            if (badThingsHappened)
+                return BadRequest();
+            return NoContent();
+        }
+    }
+}
+```
+
+### Connecting to a data store
+https://learn.microsoft.com/en-us/shows/beginners-series-to-web-apis/connecting-to-a-data-store-11-of-18--beginners-series-to-web-apis
+- Se conecta a MongoDB.
+    - MongoDB guarda la información como documentos JSON.
+    - Open-Source Database.
+    - Official C# library.
+    - Supported Azure Cosmos DB.

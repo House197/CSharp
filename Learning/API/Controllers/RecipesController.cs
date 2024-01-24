@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
+using API.Models;
 
 namespace API.Controllers
 {
@@ -9,16 +10,28 @@ namespace API.Controllers
      public class RecipesController : ControllerBase
     {
         [HttpGet]
-        public ActionResult GetRecipes()
+        public ActionResult GetRecipes([FromQuery] int count)
         {
-            string[] recipes = {"Pizza", "Dumplings", "Rice"};
+            Recipe[] recipes = {
+                new() { Title = "Oxtail" },
+                new() { Title = "Curry Chicken" },
+                new() { Title = "Dumplongs" } 
+            };
 
-            if(recipes.Any())
-                return NotFound();
-            return Ok(recipes);
+            return Ok(recipes.Take(count));
         }
 
-        [HttpDelete]
+        [HttpPost]
+        public ActionResult CreateNewRecipe([FromBody] Recipe newRecipe)
+        {
+            bool badThingsHappened = false;
+            if (badThingsHappened)
+                return BadRequest();
+            
+            return Created("", newRecipe);
+        }
+
+        [HttpDelete("{id}")] // api/recipes/a23
         public ActionResult DeleteRecipes()
         {
             bool badThingsHappened = false;
