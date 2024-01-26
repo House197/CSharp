@@ -1645,6 +1645,7 @@ https://www.youtube.com/watch?v=uytNCXw9dME&list=PLdo4fOcmZ0oUwBEC2bnwPtHqbU8Vmh
         - Create independently deployable microservices that run on Docker containers.
 - Whats the difference between .NET and .NET Framework?
     - .NET is the modernized version while .NET Framwork is the first rendition of our product.
+    - .NET Core is an evolutoin of the .NET framework, optimized for cross-platform use and designed to be fully open-source. Microsoft is working to integrate a lot of its frameworks and libraries into one product and under one SDK callend .NET 5.0
 <img src='ASP\FinShark\ImagenesC\NETvsNETFramework.png'></img>
 
 - Versions to identify each one:
@@ -2091,10 +2092,701 @@ namespace API.Controllers
 }
 ```
 
-### Connecting to a data store
+### Conección a MongoDB Atlas
 https://learn.microsoft.com/en-us/shows/beginners-series-to-web-apis/connecting-to-a-data-store-11-of-18--beginners-series-to-web-apis
 - Se conecta a MongoDB.
     - MongoDB guarda la información como documentos JSON.
     - Open-Source Database.
     - Official C# library.
     - Supported Azure Cosmos DB.
+- Los pasos seguidos están en la <a href='https://www.mongodb.com/languages/how-to-use-mongodb-with-dotnet'> documentación </a> de MongoDB, así como del <a href='https://github.com/mongodb-developer/mongodb-dotnet-example/blob/main/Services/GamesService.cs'>repositorio</a> que brinda como ejemplo.
+
+#### 1. Creación de Cluster y obtención de String para conección
+1. Se crea un cluster nuevo (un nuevo proyecto).
+2. Se agrega información propia para poder crear la DB y la Collection.
+3. En Overview del cluster creado se selecciona la opción de **Connect**
+4. En la ventana emergente, en el apartado **Connect to your application** se selecciona la opción **Drivers**.
+
+<img ref='ASP\FinShark\ImagenesC\MongoDBDrivers.png'></img>
+
+5. Se selecciona el Driver de C# y se copia el URL de conexión.
+<img ref='ASP\FinShark\ImagenesC\Connection.png'></img>
+
+#### 2. Instalación de MongoDB.Driver
+1. Se abre el gestos de dependencias Nuget usando Ctrl + Shift + p.
+2. En el campo emergente se escribe NuGet: Open NuGet Gallery.
+3. Se filtran los paquetes escribiendo MongoDB.
+4. Se descarga el paquete MongoDB.Driver, en donde se debe seleccionar el square para marcar el archivo API.csproj (en la imagen ya se había instalado el paquete).
+
+<img src='ASP\FinShark\ImagenesC\MongoDBDrivers.png'></img>
+
+#### 3. Creación de archivo ServicesDatabaseSettings para colocar datos relacionados a conexión a DB
+- Se crea el archivo en Models.
+- Se crea la interfaz en el mismo documento, en donde se deben definir las propiedades:
+    - RecipesCollectionName
+    - ConnectionString
+    - DatabaseName
+- Esta clase de utilizará en RecipesService
+
+``` C#
+namespace API.Models
+{
+    public class RecipesDatabaseSettings : IRecipesDatabaseSettings
+    {
+        public string RecipesCollectionName { get; set; } = "RecipesCollection";
+        public string ConnectionString { get; set; } = "mongodb+srv://Houser97:Houser97@cluster0.bcp5lex.mongodb.net/RecipesDB?retryWrites=true&w=majority";
+        public string DatabaseName { get; set; } = "RecipesDB";
+    }
+
+    public interface IRecipesDatabaseSettings
+    {
+        string RecipesCollectionName { get; set; }
+        string ConnectionString { get; set; }
+        string DatabaseName { get; set; }
+    }
+}
+```
+
+#### 4. Creación de archivo RecipesService para lógica de DB
+- En el archivo se define la conección a la base de datos así como las operaciones que se desean efectuar en contra de la DB.
+- Se crea la Carpeta de Services.
+
+``` C#
+using API.Models;
+using MongoDB.Driver;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace API.Services
+{
+    public class RecipesService
+    {
+        private readonly IMongoCollection<Recipe> _recipes;
+
+        public RecipesService(IRecipesDatabaseSettings settings)
+        {
+            var client = new MongoClient(settings.ConnectionString);
+            var database = client.GetDatabase(settings.DatabaseName);
+
+            _recipes = database.GetCollection<Recipe>(settings.RecipesCollectionName);
+        }
+
+        public Recipe Get(string id) => _recipes.Find(recipe => recipe.Id == id).FirstOrDefault();
+
+        public Recipe Create(Recipe recipe)
+        {
+            _recipes.InsertOne(recipe);
+            return recipe;
+        }
+    }
+}
+```
+
+1. Declaraciones.
+    - Se utiliza using para importar espacios de nombres, en donde MongoDB.Driver.
+2. Definición de campo privado _recipes.
+    - El campo almacena una instancia de **IMongoCollection<Recipe>**, el cual representa una colección de Recipes en la base de datos de MongoDB. 
+    - La interfaz **IMongoCollection** es parte del controlador de MongoDB.
+        - Es una interfaz en el contorlador oficial de MongoDB para .NET que representa una colección en una base de datos MongoDB.
+        - Proporciona métodos y propiedades que permiten interactuar con los documentos dentro de una colección.
+        - En el contexto de este código, **_recipes** se refiere a la colección de documentos MongoDB, y cada documento en esta colección se espera tenga una estructura de la clase **Recipe**.
+        - En esencia, IMongoCollection es una parte clave del controlador de MongoDB para .NET y proporciona una interfaz para realizar operaciones CRUD (Crear, Leer, Actualizar, Eliminar) en documentos almacenados en una colección MongoDB.
+    - **Recipe** es el modelo creado en Models.
+
+``` C#
+private readonly IMongoCollection<Recipe> _recipes;
+```
+
+3. Constructor **RecipesService**
+    - Recibe un objeto **IRecipesDatabaseSettings**, el cual proviene de RecipesDatabaseSettings definido en el paso anterior.
+    - Se define un cliente MongoDB **MongoClient** usando la cadena de conexión proporcionada.
+    - Se obtiene la base de datos **GetDatabase**.
+    - Se obtiene la colección **GetCollection<Recipe>**
+
+``` C#
+public RecipesService(IRecipesDatabaseSettings settings)
+{
+    var client = new MongoClient(settings.ConnectionString);
+    var database = client.GetDatabase(settings.DatabaseName);
+
+    _recipes = database.GetCollection<Recipe>(settings.RecipesCollectionName);
+}
+```
+
+4. Métodos.
+    - Después del constructor se definen los métodos que interactuan con la DB para realizar operaciones CRUD.
+
+``` C#
+        public Recipe Get(string id) => _recipes.Find(recipe => recipe.Id == id).FirstOrDefault();
+
+        public Recipe Create(Recipe recipe)
+        {
+            _recipes.InsertOne(recipe);
+            return recipe;
+        }
+```
+
+#### 5. Ajuste de modelo Recipe, ubicado en Records.cs
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
+namespace API.Models
+{
+    public class Recipe
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; init; }
+        
+        [BsonElement("Title")]
+        public string Title { get; init; }
+        public string Description { get; init; }
+        public IEnumerable<string> Directions { get; init; }
+        public IEnumerable<string> Ingredients { get; init; }
+        public DateTime Updated { get; init; }
+    }
+}
+```
+
+1. Declaraciones.
+    - Estas declaraciones using importan los espacios de nombres necesarios para la definición de la clase Recipe. 
+        - System contiene clases fundamentales de .NET.
+        - System.Collections.Generic y System.Linq para manipulación de colecciones.
+        - System.Threading.Tasks para trabajar con tareas asincrónicas. 
+        - MongoDB.Bson y MongoDB.Bson.Serialization.Attributes para trabajar con objetos BSON en MongoDB.
+
+2. Atributos de serialización BSON
+    - Estos atributos son de la biblioteca BSON de MongoDB y se utilizan para indicar cómo serializar y deserializar la clase en BSON.
+        - [BsonId] indica que la propiedad Id es la clave primaria del documento.
+        - [BsonRepresentation(BsonType.ObjectId)] especifica que la representación en BSON de la propiedad Id debe ser un ObjectId.
+
+``` C#
+[BsonId]
+[BsonRepresentation(BsonType.ObjectId)]
+```
+
+3. [BsonElement("Title")]
+    - [BsonElement("Title")] es un atributo de la biblioteca BSON de MongoDB que se utiliza para especificar el nombre del campo cuando se serializa/deserializa un objeto a/desde BSON.
+    - Cuando un objeto de la clase Recipe se serializa a BSON (por ejemplo, antes de almacenarlo en MongoDB) o se deserializa desde BSON (por ejemplo, al recuperar datos de MongoDB), la anotación [BsonElement("Title")] le dice a la biblioteca BSON que el nombre del campo BSON asociado a la propiedad Title debe ser "Title" en lugar del nombre de la propiedad en la clase.
+
+    - Esto puede ser útil en situaciones donde el nombre del campo en la base de datos MongoDB es diferente al nombre de la propiedad en la clase. Por ejemplo, si en la base de datos se utiliza "RecipeTitle" pero en la clase se quiere mantener simplemente "Title", puedes usar [BsonElement("RecipeTitle")] para mapear correctamente entre la propiedad de la clase y el campo de la base de datos.
+
+    - En resumen, [BsonElement("Title")] personaliza el mapeo entre el nombre de la propiedad de la clase y el nombre del campo BSON cuando se interactúa con MongoDB. En este caso específico, se asegura de que el campo BSON asociado a la propiedad Title tenga el nombre "Title".
+
+#### 6. Ajuste de controlador RecipesController
+
+- Se realiza la inyección de independencia de _recipeService
+
+``` C#
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using System.Linq;
+using API.Models;
+using API.Services;
+
+namespace API.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+     public class RecipesController : ControllerBase
+    {
+        private readonly RecipesService _recipeService;
+
+        public RecipesController(RecipesService recipesService)
+        {
+            _recipeService = recipesService;
+        }
+
+        [HttpGet]
+        public ActionResult GetRecipes([FromQuery] int count)
+        {
+            Recipe[] recipes = {
+                new() { Title = "Oxtail" },
+                new() { Title = "Curry Chicken" },
+                new() { Title = "Dumplongs" } 
+            };
+
+            return Ok(recipes.Take(count));
+        }
+    
+        [HttpGet("{id:length(24)}", Name = "GetRecipe")]
+        public ActionResult<Recipe> Get(string id)
+        {
+            var recipe = _recipeService.Get(id);
+
+            if(recipe == null)
+            {
+                return NotFound();
+            }
+            
+            return recipe;
+        }
+
+        [HttpPost]
+        public ActionResult<Recipe> CreateNewRecipe([FromBody] Recipe newRecipe)
+        {
+            bool badThingsHappened = false;
+            if (badThingsHappened)
+                return BadRequest();
+            
+            //_recipeService.Create(newRecipe);
+            
+
+
+            Recipe newRecipeTest = new Recipe()
+            {
+               Title="RecipeTestFull4"
+            };
+
+            _recipeService.Create(newRecipeTest);
+            
+            return CreatedAtRoute("GetRecipe", new { id = newRecipeTest.Id.ToString() }, newRecipe);
+        }
+
+        [HttpDelete("{id}")] // api/recipes/a23
+        public ActionResult DeleteRecipes()
+        {
+            bool badThingsHappened = false;
+
+            if (badThingsHappened)
+                return BadRequest();
+            return NoContent();
+        }
+    }
+}
+```
+
+- Pasos:
+1. Definición del campo privador **_recipeService**
+    - Se decalara este campo privado, el cual es de tipo RecipesService.
+    - Se marca como solo lectura, por lo que solo se puede inicializar en el constructor y no se puede modificar posteriormente.
+``` C#
+private readonly RecipesService _recipeService;
+```
+
+2. Constructor de la clase **RecipesController**.
+    - Toma un parámetros de tipo **RecipesService** y lo asigna al campo **_recipeService**.
+    - Esto se le conoce como inyección de dependencias, donde la dependencia **RecipesService** se pasa al componente dependiente **RecipesController** a través del constructor.
+    - Inyectar la dependencia de esta manera otorga la fexibilidad para cmabiar la implementación de RecipesService sin modificar la clase RecipesController, lo cual facilita las pruebas unitarias y la gestión de dependencias.
+    - Este enfoque sigue el principio de inverión de dependencias (DIP), donde las dependencias d euna clase se deben invertir, es decir, proporcionadas desde el exterior en lugar de ser creadas internamente por la clase.
+
+``` C#
+public RecipesController(RecipesService recipesService)
+{
+    _recipeService = recipesService;
+}
+```
+
+3. Uso de _recipeService
+    - En los métodos de la clase, se utiliza **_recipeService** para interactuar con la lógica de negocio relacionada con las Recipes. Por ejemplo, en el método **Get** se llama al método **Get** de **_recipeService** para obtener una receta por su ID
+
+``` C#
+var recipe = _recipeService.Get(id);
+```
+
+- En resumen, la inyección de dependencias mediante la inicialización de un campo privado en el constructor (_recipeService) permite que la clase RecipesController utilice los servicios proporcionados por RecipesService de manera flexible y facilita la gestión de dependencias y las pruebas unitarias.
+
+``` C#
+[HttpGet("{id:length(24)}", Name = "GetRecipe")]
+```
+
+- id:length(24) especifica que el parámetro de ruta id debe ser exactamente de longitud 24 caracteres. Esto es común en escenarios donde se espera un identificador BSON ObjectId de MongoDB, que suele tener una longitud de 24 caracteres.
+- Name = "GetRecipe" Asigna un nombre a la ruta del URI. En este caso, el nombre de la ruta se establece en "GetRecipe". Este nombre de ruta puede ser útil al generar enlaces o URL en la aplicación.
+    - Entonces, este atributo [HttpGet] junto con la ruta definida se encarga de asociar la solicitud HTTP GET a este método de acción específico dentro del controlador. El id es un parámetro de ruta que se espera que tenga una longitud específica, y el nombre de la ruta se establece en "GetRecipe". Este nombre de ruta puede ser referenciado en otros lugares del código para generar URLs en función del nombre de la ruta. Por ejemplo, en el método CreateNewRecipe, se utiliza CreatedAtRoute("GetRecipe", ...) para generar la URL de la receta creada.
+
+#### 7. Creación de archivo Startup
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.OpenApi.Models;
+using API.Models;
+using API.Services;
+
+namespace mongodb_dotnet_example
+{
+    public class Startup
+    {
+        public Startup(IConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
+
+        public IConfiguration Configuration { get; }
+
+        // This method gets called by the runtime. Use this method to add services to the container.
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.Configure<RecipesDatabaseSettings>(Configuration.GetSection(nameof(RecipesDatabaseSettings)));
+
+            services.AddSingleton<IRecipesDatabaseSettings>(sp => sp.GetRequiredService<IOptions<RecipesDatabaseSettings>>().Value);
+
+            services.AddSingleton<RecipesService>();
+
+            services.AddControllers();
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "mongodb_dotnet_example", Version = "v1" });
+            });
+        }
+
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+                
+                
+            }
+
+            app.UseSwagger();
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "API"));
+
+            app.UseHttpsRedirection();
+
+            app.UseRouting();
+
+            app.UseAuthorization();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
+        }
+    }
+}
+```
+
+- Es responsable de configurar y definir la estrutura de la aplicación. Contiene métodos que se llaman durante la inicialización de la aplicación para configurar servicios, middleware y el pipeline de procesamiento de solicitudes HTTP.
+
+#####  1. Constructor
+``` C#
+public Startup(IConfiguration configuration)
+{
+    Configuration = configuration;
+}
+```
+
+- Recibe una instancia de IConfiguration que proporciona acceso a las configuraciones de la aplicación. Se almacena en la propiedad Configuration para su uso posterior.
+
+##### 2. Propiedad Configuration
+- Proporciona acceso a la configuración de la aplicación. La configuración proviene de varias fuentes como archivos de configuración, variables de entorno, etc.
+
+``` C#
+public IConfiguration Configuration { get; }
+```
+
+##### 3. ConfigureServices - Método de configuración de servicios
+
+``` C#
+public void ConfigureServices(IServiceCollection services)
+{
+    // Configura el servicio RecipesDatabaseSettings usando la sección del archivo de configuración
+    services.Configure<RecipesDatabaseSettings>(Configuration.GetSection(nameof(RecipesDatabaseSettings)));
+
+    // Registra el servicio IRecipesDatabaseSettings con su implementación como RecipesDatabaseSettings
+    services.AddSingleton<IRecipesDatabaseSettings>(sp => sp.GetRequiredService<IOptions<RecipesDatabaseSettings>>().Value);
+
+    // Registra el servicio RecipesService como Singleton
+    services.AddSingleton<RecipesService>();
+
+    // Añade controladores de API
+    services.AddControllers();
+
+    // Configura Swagger para la generación de documentación de la API
+    services.AddSwaggerGen(c =>
+    {
+        c.SwaggerDoc("v1", new OpenApiInfo { Title = "mongodb_dotnet_example", Version = "v1" });
+    });
+}
+```
+
+- En este método se configurar los servicios que se usan en la app. Esto incluye la configuración de la base de datos, la configuración de Swagger para documentación de la API y la configuración de servicios como **RecipeService**.
+
+##### 4. Configure - Método de configuración de la canalización de solicitud HTTP.
+``` C#
+public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+{
+    // Configura la página de excepciones en el entorno de desarrollo
+    if (env.IsDevelopment())
+    {
+        app.UseDeveloperExceptionPage();
+    }
+
+    // Configura Swagger y UI para la documentación de la API
+    app.UseSwagger();
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "API"));
+
+    // Configura la redirección HTTPS
+    app.UseHttpsRedirection();
+
+    // Configura el enrutamiento de solicitudes
+    app.UseRouting();
+
+    // Configura la autorización
+    app.UseAuthorization();
+
+    // Configura el manejo de solicitudes HTTP
+    app.UseEndpoints(endpoints =>
+    {
+        endpoints.MapControllers();
+    });
+}
+```
+
+- En este método, se configura la canalización de procesamiento de solicitudes HTTP. Se establece el manejo de excepciones en el entorno de desarrollo, se configura Swagger y su interfaz de usuario para la documentación de la API, se habilita la redirección HTTPS, se configura el enrutamiento de solicitudes, se establece la autorización y se mapean los controladores de la API.
+En resumen, el archivo Startup.cs juega un papel crucial en la configuración y estructura de una aplicación ASP.NET Core, definiendo cómo se deben configurar los servicios, cómo se debe procesar cada solicitud HTTP y cómo se deben gestionar las excepciones.
+
+#### 8. Program.cs
+-  El archivo Program.cs es el punto de entrada de una aplicación ASP.NET Core. 
+
+##### 1. Método Main
+``` C#
+public static void Main(string[] args)
+{
+    CreateHostBuilder(args).Build().Run();
+}
+
+```
+
+- El método Main es el punto de entrada de la aplicación. Se encarga de configurar y construir el host de la aplicación utilizando el método CreateHostBuilder, y luego ejecuta el host con el método Run.
+
+##### 2. Método CreateHostBuilder
+``` C#
+public static IHostBuilder CreateHostBuilder(string[] args) =>
+    Host.CreateDefaultBuilder(args)
+        .ConfigureWebHostDefaults(webBuilder =>
+        {
+            webBuilder.UseStartup<Startup>();
+        });
+```
+
+- El método CreateHostBuilder es responsable de configurar el host de la aplicación. Utiliza Host.CreateDefaultBuilder(args) para crear un host predeterminado con una configuración básica y común. Luego, utiliza .ConfigureWebHostDefaults para configurar el host web.
+
+##### 3. Configuración del HostWeb
+``` C#
+webBuilder.UseStartup<Startup>();
+```
+- En esta línea, se especifica que la clase Startup se utilizará para configurar y construir la aplicación web. La clase Startup contiene métodos como ConfigureServices y Configure que configuran servicios y middleware para la aplicación.
+- En resumen, el archivo Program.cs establece el punto de entrada de la aplicación y configura el host de la aplicación utilizando CreateHostBuilder. El host se configura para utilizar Startup para la configuración del host web, lo que significa que la configuración específica de la aplicación web se definirá en la clase Startup. Esto sigue la convención de configuración por defecto de ASP.NET Core.
+
+#### 9. DotNevEnv
+1. Se instala el paquete desde la terminal ubicada en el root del proyecto.
+
+``` bash
+dotnet add package DotNetEnv
+```
+
+2. Se crea el archivo .env en el root del proyecto.
+3. Se carga DotNetEnv en Program.cs
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+namespace mongodb_dotnet_example
+{
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+            CreateHostBuilder(args).Build().Run();
+        }
+
+        public static IHostBuilder CreateHostBuilder(string[] args) {
+            DotNetEnv.Env.Load();
+            return Host.CreateDefaultBuilder(args)
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseStartup<Startup>();
+                });
+        }
+    }
+}
+```
+
+4. Se realiza la inyección de dependencia en Startup para poder pasar las variables de entorno a RecipesDatabaseSettings.
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.OpenApi.Models;
+using API.Models;
+using API.Services;
+
+namespace mongodb_dotnet_example
+{
+    public class Startup
+    {
+
+        private readonly string USER = string.Empty;
+        private readonly string PWD = string.Empty;
+
+        public Startup(IConfiguration configuration)
+        {
+            Configuration = configuration;
+            USER = configuration["DB_USER"] ?? string.Empty;
+            PWD = configuration["DB_PASSWORD"] ?? string.Empty;
+        }
+
+        public IConfiguration Configuration { get; }
+
+        // This method gets called by the runtime. Use this method to add services to the container.
+        public void ConfigureServices(IServiceCollection services)
+        {
+            
+
+            services.Configure<RecipesDatabaseSettings>(settings =>
+            {
+                settings.RecipesCollectionName = Configuration["RecipesDatabaseSettings:RecipesCollectionName"] ?? string.Empty;
+                settings.DatabaseName = Configuration["RecipesDatabaseSettings:DatabaseName"] ?? string.Empty;
+            });
+
+            services.AddSingleton<IRecipesDatabaseSettings>(sp =>
+                new RecipesDatabaseSettings(USER, PWD)
+            );
+
+            services.AddSingleton<RecipesService>();
+
+            services.AddControllers();
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "mongodb_dotnet_example", Version = "v1" });
+            });
+        }
+
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+                
+                
+            }
+
+            app.UseSwagger();
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "API"));
+
+            app.UseHttpsRedirection();
+
+            app.UseRouting();
+
+            app.UseAuthorization();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
+        }
+    }
+}
+```
+
+- Se colocan kas variables USER y PWD a nivel de clase, haciéndolas campos privados de la clase Startup para que estén disponibles en todo ámbito de la clase.
+##### Explicación
+``` C#
+public void ConfigureServices(IServiceCollection services)
+{
+    services.Configure<RecipesDatabaseSettings>(settings =>
+    {
+        settings.RecipesCollectionName = Configuration["RecipesDatabaseSettings:RecipesCollectionName"] ?? string.Empty;
+        settings.DatabaseName = Configuration["RecipesDatabaseSettings:DatabaseName"] ?? string.Empty;
+    });
+
+    services.AddSingleton<IRecipesDatabaseSettings>(sp =>
+        new RecipesDatabaseSettings(USER, PWD)
+    );
+}
+
+```
+- Configuración de RecipesDatabaseSettings.
+    - Se usa el método Configure<TOptions> para configurar la clase de RecipesDatabaseSettings.
+    - Establece los valores de las propiedades RecipesCollectionName y DatabaseName de la clase según los valores presentes en la configuración de la aplicaicón **Configuration**. Si los valores no están presentes en la configuración, se utilizan valores predeterminados.
+- Registro de IRecipesDatabaseSettings como servicio Singleton.
+    - Se registra la interfaz IRecipesDatabaseSettings junto con us implementación RecipesDatabaseSettings como un servicio singleton en el contenedor de servicios. Esto significa que habrá una única instancia de RecipesDatabaseSettings que será compartida por todos los componentes que la soliciten durante el tiempo de vida de la aplicación.
+    - SP dentor de la expresión lambda es el proveedor de servicios que ASP.NET Core proporciona automáticamente. Se utiliza para reoslver dependencias al crear la instancia de RecipesDatabaseSettings.
+- AddSingleton
+    - AddSingleton es un método de la clase IServiceCollection en ASP.NET Core que se utiliza para registrar servicios en el contenedor de servicios con un tiempo de vida de singleton. Singleton significa que solo habrá una instancia del servicio durante toda la vida de la aplicación y esta instancia será compartida por todos los componentes que lo soliciten.
+    - La signature es:
+``` C#
+public static IServiceCollection AddSingleton<TService>(this IServiceCollection services, TService implementationInstance)
+```
+
+##### Ejemplo Singleton
+``` C#
+services.AddSingleton<IMyService, MyService>();
+
+```
+
+En este ejemplo, se está registrando MyService como un servicio de tipo IMyService con un tiempo de vida de singleton. Cuando se solicita IMyService, se obtendrá siempre la misma instancia de MyService durante toda la duración de la aplicación.
+
+En tu código específico:
+
+``` C#
+services.AddSingleton<IRecipesDatabaseSettings>(sp =>
+    new RecipesDatabaseSettings(USER, PWD)
+);
+```
+
+- Se está registrando RecipesDatabaseSettings como un servicio de tipo IRecipesDatabaseSettings. La instancia de RecipesDatabaseSettings se crea utilizando una expresión lambda que toma el proveedor de servicios (sp) como argumento. Esto permite realizar alguna lógica personalizada durante la creación de la instancia, como en este caso, proporcionar los valores USER y PWD durante la construcción de la instancia.
+
+
+5. Se modifica la clase RecipesDatabaseSettings, en donde se define un constructor para que tome USER y PWD como parámetros.
+
+``` C#
+namespace API.Models
+{
+    public class RecipesDatabaseSettings : IRecipesDatabaseSettings
+    {
+        public string RecipesCollectionName { get; set; } = "RecipesCollection";
+        public string ConnectionString { get; set; }
+        public string DatabaseName { get; set; } = "RecipesDB";
+
+        public RecipesDatabaseSettings(string user, string pwd)
+        {
+            ConnectionString = $"mongodb+srv://{user}:{pwd}@cluster0.bcp5lex.mongodb.net/RecipesDB?retryWrites=true&w=majority";
+        }
+    }
+    public interface IRecipesDatabaseSettings
+    {
+        string RecipesCollectionName { get; set; }
+        string ConnectionString { get; set; }
+        string DatabaseName { get; set; }
+    }
+}
+```

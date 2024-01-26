@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using API.Models;
+using API.Services;
 
 namespace API.Controllers
 {
@@ -9,6 +10,13 @@ namespace API.Controllers
     [ApiController]
      public class RecipesController : ControllerBase
     {
+        private readonly RecipesService _recipeService;
+
+        public RecipesController(RecipesService recipesService)
+        {
+            _recipeService = recipesService;
+        }
+
         [HttpGet]
         public ActionResult GetRecipes([FromQuery] int count)
         {
@@ -20,15 +28,39 @@ namespace API.Controllers
 
             return Ok(recipes.Take(count));
         }
+    
+        [HttpGet("{id:length(24)}", Name = "GetRecipe")]
+        public ActionResult<Recipe> Get(string id)
+        {
+            var recipe = _recipeService.Get(id);
+
+            if(recipe == null)
+            {
+                return NotFound();
+            }
+            
+            return recipe;
+        }
 
         [HttpPost]
-        public ActionResult CreateNewRecipe([FromBody] Recipe newRecipe)
+        public ActionResult<Recipe> CreateNewRecipe([FromBody] Recipe newRecipe)
         {
             bool badThingsHappened = false;
             if (badThingsHappened)
                 return BadRequest();
             
-            return Created("", newRecipe);
+            //_recipeService.Create(newRecipe);
+            
+
+
+            Recipe newRecipeTest = new Recipe()
+            {
+               Title="RecipeTestFull4"
+            };
+
+            _recipeService.Create(newRecipeTest);
+            
+            return CreatedAtRoute("GetRecipe", new { id = newRecipeTest.Id.ToString() }, newRecipe);
         }
 
         [HttpDelete("{id}")] // api/recipes/a23
