@@ -2790,3 +2790,11 @@ namespace API.Models
     }
 }
 ```
+
+### Validating HTTP Request Payloads
+- Se tienen built-in validation attributes dentro de .NET.
+
+<img src='ASP\FinShark\ImagenesC\AttValidation.png'></img>
+
+- Se tiene Problem Details for HTTP APIs, en RFC 7807.
+    - Define una forma uniforme para reportar errores de vuelta al cliente.

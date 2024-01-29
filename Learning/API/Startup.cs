@@ -37,14 +37,14 @@ namespace mongodb_dotnet_example
         {
             
 
-            services.Configure<RecipesDatabaseSettings>(settings =>
+            services.Configure<DatabaseSettings>(settings =>
             {
-                settings.RecipesCollectionName = Configuration["RecipesDatabaseSettings:RecipesCollectionName"] ?? string.Empty;
-                settings.DatabaseName = Configuration["RecipesDatabaseSettings:DatabaseName"] ?? string.Empty;
+                settings.RecipesCollectionName = Configuration["DatabaseSettings:RecipesCollectionName"] ?? string.Empty;
+                settings.DatabaseName = Configuration["DatabaseSettings:DatabaseName"] ?? string.Empty;
             });
 
-            services.AddSingleton<IRecipesDatabaseSettings>(sp =>
-                new RecipesDatabaseSettings(USER, PWD)
+            services.AddSingleton<IDatabaseSettings>(sp =>
+                new DatabaseSettings(USER, PWD)
             );
 
             services.AddSingleton<RecipesService>();

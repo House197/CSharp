@@ -5872,19 +5872,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\ECON\\.nuget\\packages\\": {}
+    "C:\\Users\\Usuario\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\ECON\\Documents\\GitHub\\CSharp\\Learning\\API\\API.csproj",
+      "projectUniqueName": "C:\\Users\\Usuario\\Documents\\Github Desktop\\CSharp\\Learning\\API\\API.csproj",
       "projectName": "API",
-      "projectPath": "C:\\Users\\ECON\\Documents\\GitHub\\CSharp\\Learning\\API\\API.csproj",
-      "packagesPath": "C:\\Users\\ECON\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\ECON\\Documents\\GitHub\\CSharp\\Learning\\API\\obj\\",
+      "projectPath": "C:\\Users\\Usuario\\Documents\\Github Desktop\\CSharp\\Learning\\API\\API.csproj",
+      "packagesPath": "C:\\Users\\Usuario\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Usuario\\Documents\\Github Desktop\\CSharp\\Learning\\API\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\ECON\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\Usuario\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
