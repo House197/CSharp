@@ -12,7 +12,9 @@ namespace API.Models
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; init; }
+        [Required]
         public string Name { get; init; }
         public string Amount { get; init; }
+        public string Unit { get; init }
     }
 }

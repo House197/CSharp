@@ -50,6 +50,54 @@ docker run -dp 3000:3000 \
 node:18-alpine \
 sh -c "yarn install && yarn run dev"
 ```
+
+#### Ejercicio Bind Volumes
+- A partir de un proyecto Nest, se crea un bind volume de la máquina local al contenedor.
+- Se tiene la carpeta del archivo (nest-graphql), la cual se correrá en un contenedor que tiene una versión de node.
+    - Esto puede ser útil cuando se desea correr la aplicación con una versión de Node específica y en un entorno de Linux.
+- Para el ejemplo, se toma la imagen de Node 16-alpine3.16.
+- Desde la termina, estando en la ruta de la carpeteta del archivo nest-graphq, se corre el comando:
+
+``` bash
+docker container run \
+--name nest-app \
+-w /app \
+-p 80:3000 \
+-v "$(pwd)":/app \
+-d \
+node:16-alpine3.16 \
+sh -c "yarn install && yarn start:dev"
+```
+
+- Este comando levanta el contenedor, en donde el proyecto en la máquina local ahora corre en el contenedor, lo que provoca que cualquier cambio que se haga afecta al otro.
+- Notas: 
+    - Working Directory equivale a hacer cd dentro del contenedor.
+    - El puerto 80 es el que por defecto escucha localhost.
+    - A modo de que el contenedor no se cierre se ejecuta el comando sh -c "yarn install && yarn start:dev", ya que por defecto las imágenes de Node se monta, se ejecutan y si ya no hay algún comando se cierran.
+
+#### Terminal interactiva -it
+- Teniendo el contenedor corriendo, se usa el comando:
+
+``` bash
+docker exec -it <contenedorID> <ejecutable>
+```
+
+- Entonces, se va a tener el comando:
+
+``` bash
+docker exec -it 978 /bin/sh
+```
+
+- El comando sh permite abrir la terminal en el contenedor.
+    - Este comando se encuentra en la carpeta bin.
+- Se aprecia que se entra al contenedor a la ruta de /app, ya que es el working directory que se especificó.
+    - Si se ejecuta cd .. se accede al filesystem del contenedor.
+- Se pueden editar archivos en el contenedor, lo cual se verá reflejado en la máquina local.
+    - Normalmente se pueden editar archivos desde laterminal usando vi <archivo>.
+        - Al usar la versión Alpine, la cual es una versión ligera, se debe presionar la letra i para poder empezar a modificar el archivo.
+    - Al terminar la edición se presionar ESC para poder escribir :wq, lo cual significa ESCACPE, WRITE, QUIT
+
+
 ### Anonymous Volumes
 - Docker se encarga de asignar el nombre
 
@@ -145,8 +193,6 @@ docker container run \
 phpmyadmin:5.2.0-apache
 ```
 
-
-
 # Eliminar todos los contenedores o imágenes
 ``` bash
 docker container rm -s $(docker container ls -aq)
@@ -198,3 +244,174 @@ docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -d postgre
 docker pull <imageName>
 ```
 
+# Multi-container Apps - Docker Compose
+## Laboratorio de reforzamiento.
+- Se montarán contenedores para correr Postgres y pgAdmin.
+
+### Paso 1. Creación de volumen
+``` bash
+docker volume create postgres-db
+```
+
+### Paso 2. Montar imagen de Postgres.
+- NO hace falta asignar un puerto, ya que con pgAdmin se administra la db.
+- EL path a la base de datos para hacer el mapeo del volumen se encuentra en la documentación oficial de docker para postgres, en donde se filtra la información por medio de las palabras var/lib
+``` bash
+docker container run \
+-d \
+--name postgres-db \
+-e POSTGRES_PASSWORD=123456 \
+-v postgres-db:/var/lib/postgresql/data \
+postgres:15.1
+```
+
+### Paso 3. Montar imagen pgAdmin
+``` bash
+docker container run \
+--name pgAdmin \
+-e PGADMIN_DEFAULT_PASSWORD=123456 \
+-e PGADMIN_DEFAULT_EMAIL=superman@google.com \
+-dp 8080:80 \
+dpage/pgadmin4:6.17
+```
+
+### Paso 4. Crear red para comunicar ambos contenedores
+``` bash
+docker network create postgres-net
+```
+
+### Paso 5. Asignar ambos contenedores a la red
+```bash
+docker network connect postgres-net postgres-db
+docker network conncet postgres-net pgAdmin
+```
+
+### Paso 6. Ingresar a pgAdmin y crear conexión a la base de datos
+http://localhost:8080/
+
+Click derecho en Servers
+Click en Register > Server
+Colocar el nombre de: "SuperHeroesDB" (el nombre no importa)
+Ir a la pestaña de connection
+Colocar el hostname "postgres-db" (el mismo nombre que le dimos al contenedor)
+Username es "postgres" y el password: 123456
+Probar la conexión
+
+## Docker compose
+- Es una herramiento se que desarrolló para ayudar a definir y compartir aplicaciones de varios contenedores.
+- Se crea la carpeta postgres-pgadmin
+- Se crea el archivo docker-compose.yml
+
+### Paso 1. Definir versión.
+- Siempre se inicia con la versión del docker compose.
+- Esto especifica si se usa la versión legacy, la 2 o si se trabaja con la última.
+
+### Paso 2. Definir servicios.
+- Cada servicio en la lista es un contenedor.
+- Normalmente se definen los campos de image, volumes, ports, environment, container name (si no se especifica le coloca el nombre del servicio).
+- Para el caso de los volumenes se tienen dos casos: usar uno existente o que se cree uno nuevo.
+    - Al final del archivo se debe enlistar con ayuda del apartado volumes.
+        - Si solo se especifica el nombre del volumen entonces se indica a docker que lo cree.
+            - En este caso, el nombre del volumen es el especificado, en donde inicia con el nombre de la carpeta del archivo:
+                - postgres-pgadmin_postgres-db
+    - Para poder usar un volumen externo (el creado anteriormente postgres-db) se debe especificar external.
+- Se puede detener el contenedor con docker compose down.
+
+``` yml
+version: '3'
+
+services:
+  db:
+    container_name: postgres_database
+    image: postgres:15.1
+    volumes:
+      - postgres-db:/var/lib/posgresql/data
+    environment:
+      - POSTGRES_PASSWORD=123456
+
+  pgAdmin:
+    depends_on:
+      - db
+    image: dpage/pgadmin4:6.17
+    ports:
+      - 8080:80
+    environment:
+      - PGADMIN_DEFAULT_PASSWORD=123456
+      - PGADMIN_DEFAULT_EMAIL=superman@google.com
+
+volumes:
+  postgres-db:
+    external: true
+```
+
+## Bind Volumes - Docker Compose
+- Se eliminan los volúmenes trabajados hasta el momento con docker volume prune
+- Docker compose se encarga de crear las carpetas en caso de que no existan cuando se define el Bind Volume.
+- En contenedores con pgAdmin se recomienda revisar la documentación de la versión usada.
+    - Se revisa la imagen para encontrar el VOLUME que se usó en su construcción por parte de los creadores.
+    - Se escoge el TAG con la versión que corresponde y se busca el Volume.
+
+<img src='Docker\images\pgAdmin.png'></img>
+
+- De esta forma, se tienen dos bind volumes.
+
+``` yml
+version: '3'
+
+services:
+  db:
+    container_name: postgres_database
+    image: postgres:15.1
+    volumes:
+#      - postgres-db:/var/lib/posgresql/data
+      - ./postgres:/var/lib/posgresql/data
+    environment:
+      - POSTGRES_PASSWORD=123456
+
+  pgAdmin:
+    depends_on:
+      - db
+    image: dpage/pgadmin4:6.17
+    ports:
+      - 8080:80
+    volumes:
+#      - postgres-db:/var/lib/posgresql/data
+      - ./pgadmin:/var/lib/pgadmin
+    environment:
+      - PGADMIN_DEFAULT_PASSWORD=123456
+      - PGADMIN_DEFAULT_EMAIL=superman@google.com
+
+#volumes:
+#  postgres-db:
+#    external: true
+```
+
+- Es posible que para Linux aparezca un error, el cual se resuelve al hacer cambio de owner con:
+    Warning: pgAdmin runs as the pgadmin user (UID: 5050) in the pgadmin group (GID: 5050) in the container. You must ensure that all files are readable, and where necessary (e.g. the working/session directory) writeable for this user on the host machine. For example:
+
+    sudo chown -R 5050:5050 <host_directory>
+
+    - On some filesystems that do not support extended attributes, it may not be possible to run pgAdmin without specifying a value for PGADMIN_LISTEN_PORT that is greater than 1024. In such cases, specify an alternate port when launching the container by adding the environment variable, for example:
+
+    - -e 'PGADMIN_LISTEN_PORT=5050'
+    - Don’t forget to adjust any host-container port mapping accordingly.
+
+``` bash
+sudo chown -R 5050:5050 pgadmin
+```
+
+- Si el contenedor corre en detached entonces se puede llevar registro de lo que sucede con:
+
+``` bash
+docker compose logs
+docker compose logs -f // Muestra cualquier cambio o log que se vaya haciendo.
+```
+
+## Ejercicio 2. Multi-container app - Base de datos Mongo
+- Se utilizan las siguiente imágenes:
+    - Mongo
+    - Mongo-express (permite conexión a base de datos).
+    - Pokemon-nest-app
+- Se crea la carpeta pokemon-app.
+- Se crea el archivo .env
+    - Docker compose lee por defecot los archivo .env que se encuentran al mismo nivel.

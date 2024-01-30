@@ -40,6 +40,7 @@ namespace mongodb_dotnet_example
             services.Configure<DatabaseSettings>(settings =>
             {
                 settings.RecipesCollectionName = Configuration["DatabaseSettings:RecipesCollectionName"] ?? string.Empty;
+                settings.IngredientsCollectionName = Configuration["DatabaseSettings:IngredientsCollectionName"] ?? string.Empty;
                 settings.DatabaseName = Configuration["DatabaseSettings:DatabaseName"] ?? string.Empty;
             });
 
@@ -48,12 +49,13 @@ namespace mongodb_dotnet_example
             );
 
             services.AddSingleton<RecipesService>();
+            services.AddSingleton<IngredientsService>();
 
-            services.AddControllers();
+            services.AddControllers().AddNewtonsoftJson();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "mongodb_dotnet_example", Version = "v1" });
-            });
+            }).AddSwaggerGenNewtonsoftSupport();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

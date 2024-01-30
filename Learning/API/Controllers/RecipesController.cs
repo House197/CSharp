@@ -72,5 +72,20 @@ namespace API.Controllers
                 return BadRequest();
             return NoContent();
         }
+
+        // Métodos Update con JsonPatch
+        [HttpPatch("{id}")]
+        public async Task<ActionResult> UpdateRecipe(string id, JsonPatchDocument<Recipe> recipeUpdates)
+        {
+            var recipe = await _recipeService.GetRecipeById(id);
+
+            if(recipe == null)
+                return NotFound();
+            
+            recipeUpdates.ApplyTo(recipe);
+            await _recipeService.UpdateRecipe(recipe);
+
+            return NoContent();
+        }
     }
 }

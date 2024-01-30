@@ -2798,3 +2798,97 @@ namespace API.Models
 
 - Se tiene Problem Details for HTTP APIs, en RFC 7807.
     - Define una forma uniforme para reportar errores de vuelta al cliente.
+- Para su uso se debe usar:
+
+``` C#
+using System.ComponentModel.DataAnnotations
+```
+
+- Los modelos para Recipes e Ingredients lucen así ahora:
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
+namespace API.Models
+{
+    public record Ingredient
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; init; }
+        [Required]
+        public string Name { get; init; }
+        public string Amount { get; init; }
+        public string Unit { get; init }
+    }
+}
+```
+
+``` C#
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using System.ComponentModel.DataAnnotations;
+
+namespace API.Models
+{
+    public record Recipe
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; init; }
+        
+        [Required]
+        [BsonElement("Title")]
+        public string Title { get; init; }
+        public string Description { get; init; }
+        public IEnumerable<string> Directions { get; init; }
+        public IEnumerable<string> Tags { get; init; }
+
+        [Required]
+        public IEnumerable<string> Ingredients { get; init; }
+        public DateTime Updated { get; init; }
+    }
+}
+```
+
+### Updating data with JSON Patch
+- Se tienen dos métodos HTTP para actualizar recursos:
+    - Put
+        - Updates are issued by replacing entire resources
+        - En estas peticione usualmente se tiene en el body todo el recurso.
+    - Patch
+        - Permite actualizar propiedades individuales en los recursos.
+        - En el Body se contienen las propiedades individuales y la operación update asociada.
+        - En RFC 6902 se define how to issue updates to resources inside of our web APIs.
+- JSON Patch define operaciones como:   
+    - add, remove, replace, move, copy y test.
+
+<img src='ASP\FinShark\ImagenesC\JSONPatch.png'></img>
+
+- Se deben isntalar las siguientes NuGet Packages.
+    - Microsoft.AspNetCore.JsonPatch
+    - Microsoft.AspNetCore.Mvc.NewtonsoftJson.
+    - Swashbuckle.AspNetCore.Newtonsoft
+        - Se necesita para que JSON Patch support works inside of Swagger UI.
+- En Startup.cs, en la parte de ConfigureService se agrega la siguiente parte:
+
+``` C#
+services.AddControllers().AddNewtonsoftJson();
+services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "mongodb_dotnet_example", Version = "v1" });
+}).AddSwaggerGenNewtonsoftSupport();
+```
+
+- Finalmente, en el controlador de Recipes se definen los métodos de Update
+
+https://code-maze.com/getting-started-aspnetcore-mongodb/
