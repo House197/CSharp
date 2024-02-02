@@ -414,4 +414,231 @@ docker compose logs -f // Muestra cualquier cambio o log que se vaya haciendo.
     - Pokemon-nest-app
 - Se crea la carpeta pokemon-app.
 - Se crea el archivo .env
-    - Docker compose lee por defecot los archivo .env que se encuentran al mismo nivel.
+    - Docker compose lee por defecto los archivo .env que se encuentran al mismo nivel.
+- Se crea el archivo de Docker Compose.
+    - Al especificar que el volumen no es externo entonces Docker va a crear el volumen.
+        - Por medio de este apartado se puede cambiar el volumen por ocupar en un futuro.
+### Servicio MongoDB (DB)
+- El servicio de DB (MongoDB) no se expone al exterior por medio de puerto, ya que solo se utiliza dentro de la red para otros contenedores.
+- Se le coloca el campo de restart always, lo cual permite que el contenedor se reinicie automáticamente si es que se detiene.
+#### Variables de entorno
+- Las variables de entorno se definen con el campo environment.
+    - Se tienen dos maneras de colocar las variables de entorno:
+        - En un listado.
+        - Como un campo.
+``` yaml
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME = mongoadmin
+
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongoadmin
+```
+
+- Autenticación para consultas a base
+    - La definición se puede encontrar en la documentación oficial.
+    - A modo de poder ejecutar el comando se pueden usar el comando de docker compose (command: ['--auth']). Por otro lado, otra alternativa menos viable es:
+        - Entrar al contenedor y ejecutar el comando con la terminal interactiva usando el bash.
+    - En mongoDB se puede autenticar por medio del connection string:
+        - mongodb://username:password@localhost:27017
+``` yaml
+command: ['--auth']
+```
+#### Uso de .env
+- Se definen las variables en el archivo .env
+
+``` env
+MONGO_USERNAME=Quemso
+MONGO_PASSWORD=123456
+MONGO_DB_NAME=pokemon_db
+```
+
+- En el archivo de Docker Compose se usan las variables de entorno por medio ${MONGO_DB_NAME}
+
+``` yml
+version: '3'
+
+services:
+  db:
+    container_name: ${MONGO_DB_NAME}
+    image: mongo:6.0
+    volumes:
+      - poke-vol:/data/db
+    restart: always
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+
+volumes:
+  poke-vol:
+    external: false
+```
+
+### Visor de Base de datos (mongo-express)
+- Entre las variables de entorno que se definen se encuentra el nombre del servidor a conectar, el cual es el de la base de datos.
+    - Esto corresponde con la red del contenedor al que se desea conectar, la cual tiene el DNS con el nombre del contenedor, siendo en este caso el valor de la variable .env MONGO_DB_NAME.
+    - En otras palabras, el nombre del contenedor a su vez es el nombre del servidor basado en el DNS asignado a la red.
+- Se quita el puerto de la base de datos para asegurar que el contenedor quede aislado, siendo accedido solo por mongo-express.
+
+``` yml
+version: '3'
+
+services:
+  db:
+    container_name: ${MONGO_DB_NAME}
+    image: mongo:6.0
+    volumes:
+      - poke-vol:/data/db
+    restart: always
+    ports:
+      # - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    command: ['--auth']
+
+  mongo-express:
+    depends_on:
+      - db
+    image: mongo-express:1.0.0-alpha.4
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD}
+      ME_CONFIG_MONGODB_SERVER: ${MONGO_DB_NAME}
+    ports:
+      - 8080:8081
+    restart: always
+
+volumes:
+  poke-vol:
+    external: false
+```
+
+### Aplicación NEST
+
+``` yml
+version: '3'
+
+services:
+  db:
+    container_name: ${MONGO_DB_NAME}
+    image: mongo:6.0
+    volumes:
+      - poke-vol:/data/db
+    restart: always
+    #ports:
+      # - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    command: ['--auth']
+
+  mongo-express:
+    depends_on:
+      - db
+    image: mongo-express:1.0.0-alpha.4
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD}
+      ME_CONFIG_MONGODB_SERVER: ${MONGO_DB_NAME}
+    ports:
+      - 8080:8081
+    restart: always
+  
+  poke-app:
+    depends_on:
+      - db
+      - mongo-express
+    image: klerith/pokemon-nest-app:1.0.0
+    ports:
+      - 3000:3000
+    environment:
+      MONGODB: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_DB_NAME}:27017
+      DB_NAME: ${MONGO_DB_NAME}
+    restart: always
+
+volumes:
+  poke-vol:
+    external: false
+```
+
+## Dockerfile
+- Son instrucciones de cómo construir la imagen que va a ejecutar el código.
+    - Se puede ver como el blueprint para la construcción de la imagen.
+- Dockerizar es construir una imagen basado en el código deseado.
+    - Proceso de tomar un código fuente y generar un imagen lista para montar y correrla en un contenedor.
+
+### Ejemplo Cron-Ticker
+- Se crea un nuevo proyecto usando npm init.
+    - Se inicia el proyecto con la configuración inicial.
+- Se instala node-cron:
+    - npm i node-cron
+- En el archivo app.js se coloca el çodigo de muestra para cron.
+
+``` js
+const cron = require('node-cron');
+
+let times = 0;
+
+cron.schedule('1-59/5 * * * * *', () => {
+  console.log('Tick cada 5 segundos', times);
+});
+
+console.log('Inicio');
+```
+
+- Se crea el script start para ejecutar el comando node app.js
+
+#### Dockerizacion
+- La mayoría de las veces se inicia la imagen a partir de otras imágenes.
+- Se inicia la imagen agregando Node.
+    - Se aprecia que en la imagen de node, los tags traen el nombre de Alpine.
+        - Esto indica que la imagen de Node ya provee de una versión de Linux lista para ser utilizada.
+    - Por esta razón se inicia indicando el uso de Node.
+    - Se especifica que se desea la tag 19.2-alpine.
+    - La imagen de alpine ya trae una carpeta llamada /app que se usa para colocar la aplicación.
+- CMD le indica a DOCKER qué hacer cuando se empiece a correr el contenedor de la imagen, por lo que se definen ahí los comandos para iniciar la aplicación.
+- Se construye la imagen usando el siguiente comando.
+  - --tag permite nombrar a la imagen.
+  - Colocar : después del nombre dado a la imagen perite colocarle un tag.
+  - El . es el path relativo de donde se encuentra el dockerfile.
+  - Al construir la imagen, la capa CMD no se toma en cuenta ya que entra en juego cuando se corre un contenedor.
+``` bash
+docker build --tag cron-ticker .
+```
+
+``` dockerfile
+FROM node:19.2-alpine3.16
+# /app
+
+# cd app
+WORKDIR /app
+
+# Dest /app
+COPY app.js package.json ./
+
+# Se instalan las dependencias
+RUN npm install
+
+# Se ejecuta el comando (script definido en package.json) para correr app
+# CMD se usa para la última instrucción/es a ejecutar.
+CMD [ "node", "app.js" ]
+
+```
+- Como buena práctica se tiene colocar los cmoando que menos cambian hasta arriba para que se guarden en caché a la hora de construir nuevas imágenes o descargarlas.
+
+#### Reconstruir imágenes
+- Se lleva a cabo cuando se hace actualización en el código fuente o para corregir errores en la imagen.
+- Al momento de construir la imagen, si se espera que un archivo tenga cambios frecuentes en el futuro entonces debe ir en las capas inferiores:
+  - El comando COPY se separa para poder colocar el archivo app.js al final, ya que este archivo puede cambiar más veces en lugar de package.json.
+- Si se reconstruye la imagen colocando el mismo nombre y sin tag, entonces se irán almacenando las imágenes anteriores sin un repository ni tag, haciendolas dificil de identificar.
+
+#### Colocar tag a una imagen
+``` bash
+docker image tag SOURCE[:TAG] TARGET_IMAGE[:TAG]
+```
+
+
+## Notas
+- Al levantar la imagen por primera vez, la base de datos ya se habrá configurado por medio de las variable de entorno, por lo que un cambio en estas variable en el Docker Compose no serán tomadas debido a que el volumen persiste la data de los primero valores dados a las variables de entorno.
