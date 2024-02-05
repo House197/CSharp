@@ -638,7 +638,200 @@ CMD [ "node", "app.js" ]
 ``` bash
 docker image tag SOURCE[:TAG] TARGET_IMAGE[:TAG]
 ```
+- Entonces, en SOURCE se coloca el nombre que aparece en REPOSITORY junto a su tag al enlistar las imágenes. Luego, se coloca el nuevo nombre y el tag.
 
+``` bash
+docker image tag cron-ticker:1.0.0 cron-ticker:bunny
+```
+
+- AL hacer esto se tienen dos registros en la lista de image ls con el nombre de cron-ticker pero con una Tag diferentes.
+  - Estas dos imágenes apuntan a la misma imagen, lo cual se ve en IMAGE ID. 
+  - Si esta es la última versión de la imagen, entonces el registro que dice LATEST en la tag también apunta a la misma imagen.
+- De esta forma, al hacer rebuild a la imagen se tiene un historial de las imágenes anteriores que se pueden identificar por medio de su tag.
+
+### Subir imagen a Docker Hub.
+- A los repositorios en Docker Hub se les conoce como registros.
+- Se crea una cuenta en Docker Hub y se crea un repositorio público.
+- Se sube la imagen por medio del comando dado por la página:
+
+``` bash
+docker push username/imageName:tagname
+```
+
+- Entonces, se tiene:
+
+``` bash
+docker push houser97/cron-ticker:tagname
+```
+
+- Para poder subir la imagen se debe cambiar su nombre de REPOSITORY para que concuerde con houser97/cron-ticker
+
+``` bash
+ docker image tag cron-ticker:bunny houser97/cron-ticker
+```
+
+- Luego, se debe autenticar desde la terminar con los comandos:
+
+``` bash
+ docker login
+```
+
+- Se debe escribir el username en minúscula, tal como aparece en el comando para hacer push a una imagen.
+- Se sube la imagen.
+
+``` bash
+docker push houser97/cron-ticker
+```
+
+- Si no se puso tag entonces toma el latest.
+- Se puede hacer push de las otras impagenes de forma de no perder la referencia de las imágenes subidas al Docker Hub.
+  - Se debe cambiar el nombre de REPOSITORY de la imagen que se desea subir con la diferencia de que ahora se especifica su tag.
+
+``` bash
+ docker image tag houser97/cron-ticker:latest houser97/cron-ticker:1.0.0
+```
+
+``` bash
+docker push houser97/cron-ticker:1.0.0
+```
+
+- Solo las imágenes oficiales respetan que el latest sea el primero que aparece.
+
+- NOTA: ya que la iamgen se contruyó desade la máquina virtual de linux la arquitectura de la imagen es esa, por lo que puede haber incompatibilidad si se quiere usar la imagen en otra arquitectura. Se resuelve en siguientes capítulos.
+
+### Consumibr imágenes propias de Docker Hub
+- Basta con crear un contenedor: 
+
+``` bash
+docker container run houser97/cron-ticker:1.0.0
+```
+
+### Pruebas automáticas al código
+- Se usa para asegurar que el código cumpla con los objetivos antes de pasarlo a producción.
+- Es una capa de seguridad de que la aplicación se comporta como se desea.
+- Se instala la dependencia de jest en la aplicación.
+``` bash
+ npm i jest --save-dev
+```
+
+- El archivo de testing es:
+
+``` js
+const { syncDB } = require("../../tasks/sync-db");
+
+
+describe('Pruebas en syncDB', () => {
+    test('Debe ejecutar el proceso 2 veces', () => {
+        syncDB();
+        const times = syncDB();
+        expect(times).toBe(2);
+    })
+})
+```
+
+- Se hace la prueba de que al retornar times en el código retorne el valor esperado.
+- En el archivo package.json se debe escribir jest en el apartado de test.
+
+
+#### Incorporación testing en la construcción
+- Se colocarán los módulos de jest temporalmente en la imagen para que se puedan correr los tests.
+- Una vez que los tests han pasado se eliminan los módulos de jest, ya que solo son necesarios durante el desarrollo y no en producción.
+  - Se crea el .dockerignore para no copiar las carpetas de node_modules, ya que están optimizadas al sistema operativo en donde se instalaron.
+- Este enfoque no es el mejor, ya que cada layer de la imagen incremental el peso de la imagen. En la sección de MultiStage se muestra la solución.
+
+``` bash
+FROM node:19.2-alpine3.16
+# /app
+
+# cd app
+WORKDIR /app
+
+# Dest /app
+COPY package.json ./
+
+# Se instalan las dependencias
+RUN npm install
+
+COPY . .
+
+# Realizar testing
+RUN npm run test
+
+# Eliminar archivos y directorios no necesarios en producción.
+# Se eliminan node_modules para poder construirlos de nuevos, pero ahora solo los de prod.
+RUN rm -rf tests && rm -rf node_modules
+
+# Se instalan las dependencias de producción
+RUN npm install --prod
+
+# Se ejecuta el comando (script definido en package.json) para correr app
+# CMD se usa para la última instrucción/es a ejecutar.
+CMD [ "node", "app.js" ]
+```
+
+### Forzar una plataforma en la construcción
+- Se puede especificar una plataforma en el dockerfile usando:
+``` dockerfile
+FROM --platform=linux/amd64 node:18-alpine
+```
+
+### Buildx
+- Es un constructor de imagen.
+- Con docker buildx ls se enlistan los builders que se tienen por defecto.
+
+``` docker
+docker buildx create --name mybuilder --bootstrap --use
+```
+
+- Con el comando anterior se descarga una imagen y crea un contenedor.
+  - Se puede utilizar para definir la construcción y que cree las imágenes con todas las versiones en una sola línea.
+- Al enlistar las plataformas con buildx ls se aprecia que se tiene por defecto una seleccionada.
+- Se cambia por medio de:
+
+``` docker
+docker buildx use mybuilder
+```
+
+- Se pueden ver las características del builder por medio de inspect.
+
+``` docker
+docker buildx inspect
+```
+
+- Dockerfile provee de dos variables de entorno:
+  - BUILDPLATFORM
+  - TARGETPLATFORM
+
+- Se pueden usar de la siguiente manera:
+
+ ``` dockerfile
+FROM --platform=$BUILDPLATFORM node:19.2-alpine3.16
+```
+- De esta forma, esta imagen va a depenedner de todas las plataformas que el Builder maneja.
+  - La variable recibe el valor directamente desde el comando de builx build.
+- Por otro lado, con el siguiente comando se especifican las plataformas:
+
+ ``` bash
+docker buildx build --platform linux/amd64,linux/arm64,linux/arm/v7 -t <username>/<image>:latest --push .
+```
+
+- Se debe verificar que las plataformas estén disponibles en el builder para poder hacerlo.
+ ``` bash
+docker buildx build --platform linux/amd64,linux/amd64/v2,linux/386 \
+> -t houser97/cron-ticker --push .
+```
+
+- Por otro lado, si en el dockerfile no se usa la variable de entorno y se deja como el Dockerfile original, entonces el comando buildx build va a crear varias imágenes para cada arquitectura.
 
 ## Notas
 - Al levantar la imagen por primera vez, la base de datos ya se habrá configurado por medio de las variable de entorno, por lo que un cambio en estas variable en el Docker Compose no serán tomadas debido a que el volumen persiste la data de los primero valores dados a las variables de entorno.
+- Cada Layer en la imagen agrega peso a la imagen final.
+
+## Buenas prácticas
+### Push
+- Después de hacerle push a una imagen con su tag se debería hacer un segundo push sin la tag para que en Docker Hub latest y la última imagen subida coincidan.
+### Dockerfile
+- Las capas que no cambian se colocan hasta arriba del dockerfile para que se guarden en caché.
+- No copiar todo el systemfile al contenedor, ya que se van carpetas como node_modules, carpetas invisibles como git. Se puede copiar todo si se usa dockerignore.
+### Dockerignore
+- EL archivo no se ignora a sí mismo, por lo que se debe especificar también.
