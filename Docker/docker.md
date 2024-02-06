@@ -823,6 +823,18 @@ docker buildx build --platform linux/amd64,linux/amd64/v2,linux/386 \
 
 - Por otro lado, si en el dockerfile no se usa la variable de entorno y se deja como el Dockerfile original, entonces el comando buildx build va a crear varias imágenes para cada arquitectura.
 
+### Eliminar buildx
+- Se debe cambiar de buildx antes de poder borrarlo:
+ ``` bash
+docker buildx use default
+```
+
+- Luego, se elimina:
+
+ ``` bash
+docker buildx rm mybuilder
+```
+
 ## Notas
 - Al levantar la imagen por primera vez, la base de datos ya se habrá configurado por medio de las variable de entorno, por lo que un cambio en estas variable en el Docker Compose no serán tomadas debido a que el volumen persiste la data de los primero valores dados a las variables de entorno.
 - Cada Layer en la imagen agrega peso a la imagen final.
