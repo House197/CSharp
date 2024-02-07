@@ -236,3 +236,41 @@ docker build --no-cahe -t myImage:myTag
 ``` bash
 docker compose -f docker-compose.prod.yml build app
 ```
+
+### Diferencia entre docker compose build y docker build
+https://stackoverflow.com/questions/50230399/what-is-the-difference-between-docker-compose-build-and-docker-build
+
+docker-compose can be considered a wrapper around the docker CLI (in fact it is another implementation in python as said in the comments) in order to gain time and avoid 500 characters-long lines (and also start multiple containers at the same time). It uses a file called docker-compose.yml in order to retrieve parameters.
+
+You can find the reference for the docker-compose file format here.
+
+So basically docker-compose build will read your docker-compose.yml, look for all services containing the build: statement and run a docker build for each one.
+
+Each build can specify a Dockerfile, a context and args to pass to docker.
+
+To conclude with an example docker-compose.yml file:
+
+``` yml
+version: '3.2'
+
+services:
+  database:
+    image: mariadb
+    restart: always
+    volumes:
+      - ./.data/sql:/var/lib/mysql
+
+  web:
+    build:
+      dockerfile: Dockerfile-alpine
+      context: ./web
+    ports:
+      - 8099:80
+    depends_on:
+```
+
+When calling docker-compose build, only the web target will need an image to be built. The docker build command would look like:
+
+``` bash
+docker build -t web_myproject -f Dockerfile-alpine ./web
+```
