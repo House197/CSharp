@@ -223,6 +223,9 @@ docker compose -f docker-compose.prod.yml up
 docker compose -f docker-compose.prod.yml build app
 ```
 
+# 07. Deployments y Registros
+## Aprovisionamiento de Base de Datos - Digital Ocean
+
 ## Buenas prácticas
 ### Imágenes
 - Reconstruir de vez en cuando toda la imagen.
@@ -274,3 +277,4 @@ When calling docker-compose build, only the web target will need an image to be 
 ``` bash
 docker build -t web_myproject -f Dockerfile-alpine ./web
 ```
+
